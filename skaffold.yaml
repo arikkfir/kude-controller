@@ -1,0 +1,38 @@
+# nonk8s
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: kude-controller
+build:
+  artifacts:
+  - image: controller
+    hooks:
+      before:
+        - command:
+            - go
+            - install
+            - sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+        - command:
+            - controller-gen
+            - object
+            - paths="./internal/vcs/v1alpha1"
+        - command:
+            - controller-gen
+            - rbac:roleName=kude-controller
+            - crd
+            - webhook
+            - paths="./..."
+deploy:
+  kubectl:
+    defaultNamespace: kude
+    manifests:
+    - config/crd/vcs.kude.kfirs.com_gitrepositories.yaml
+    - config/deploy/namespace.yaml
+    - config/rbac/service-account.yaml
+    - config/rbac/cluster-role.yaml
+    - config/rbac/cluster-role-binding.yaml
+    - config/deploy/deployment.yaml
+portForward:
+  - resourceType: Deployment
+    resourceName: controller
+    namespace: kude
