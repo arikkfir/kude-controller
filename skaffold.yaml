@@ -4,35 +4,24 @@ kind: Config
 metadata:
   name: kude-controller
 build:
+  local:
+    push: false
+    useBuildkit: true
+    concurrency: 0
   artifacts:
   - image: controller
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kustomize:
+    paths:
+      - config
     hooks:
       before:
-        - command:
-            - go
-            - install
-            - sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
-        - command:
-            - controller-gen
-            - object
-            - paths="./internal/vcs/v1alpha1"
-        - command:
-            - controller-gen
-            - rbac:roleName=kude-controller
-            - crd
-            - webhook
-            - paths="./..."
-deploy:
-  kubectl:
-    defaultNamespace: kude
-    manifests:
-    - config/crd/vcs.kude.kfirs.com_gitrepositories.yaml
-    - config/deploy/namespace.yaml
-    - config/rbac/service-account.yaml
-    - config/rbac/cluster-role.yaml
-    - config/rbac/cluster-role-binding.yaml
-    - config/deploy/deployment.yaml
-portForward:
-  - resourceType: Deployment
-    resourceName: controller
-    namespace: kude
+        - host:
+            command: [./delete-cluster-resources.sh]
+            dir: scripts
+      after:
+        - host:
+            command: [kubectl, apply, -f, "repos.yaml", "bundles.yaml"]
+            dir: test

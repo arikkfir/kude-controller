@@ -13,7 +13,7 @@ this project you agree to abide by its terms.
 
 1. You should probably have a Go-capable IDE
    1. Usually either of GoLand or VSCode (but you can use any other IDE of course)
-2. Ensure you have Go SDK 1.19+ installed & working
+2. Ensure you have Go SDK 1.18+ installed & working
 3. Ensure you have Docker installed & working
 4. Verify they work by:
    ```shell

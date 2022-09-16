@@ -19,13 +19,15 @@
     </option>
     <option name="skaffoldConfigurationFilePath" value="$PROJECT_DIR$/skaffold.yaml" />
     <option name="skaffoldModules">
-      <list />
+      <list>
+        <option value="kude-controller" />
+      </list>
     </option>
     <option name="skaffoldNamespace" />
     <option name="skaffoldProfile" />
     <option name="skaffoldWatchMode" value="ON_DEMAND" />
     <option name="statusCheck" value="true" />
-    <option name="verbosity" value="WARN" />
+    <option name="verbosity" value="INFO" />
     <method v="2" />
   </configuration>
 </component>

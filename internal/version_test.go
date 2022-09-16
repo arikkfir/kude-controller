@@ -1,4 +1,4 @@
-package kude
+package internal
 
 import (
 	"testing"

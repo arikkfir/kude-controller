@@ -1,0 +1,9 @@
+apiVersion: kude.kfirs.com/v1alpha1
+kind: KubectlBundle
+metadata:
+  name: kubectl-bundle
+  namespace: kude
+spec:
+  sourceRepository: kude/kude-controller-main
+  files:
+    - test/bundles/kubectl/*.yaml

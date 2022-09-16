@@ -1,0 +1,9 @@
+apiVersion: kude.kfirs.com/v1alpha1
+kind: GitRepository
+metadata:
+  name: kude-controller-main
+  namespace: kude
+spec:
+  url: https://github.com/arikkfir/kude-controller.git
+  branch: refs/heads/main
+  pollingInterval: 5m
