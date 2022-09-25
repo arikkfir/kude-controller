@@ -4,10 +4,10 @@
     <option name="buildEnvironment" value="Local" />
     <option name="cleanupDeployments" value="true" />
     <option name="deployToCurrentContext" value="false" />
-    <option name="deployToMinikube" value="true" />
+    <option name="deployToMinikube" value="false" />
     <option name="envVariables" />
     <option name="imageRepositoryOverride" />
-    <option name="kubernetesContext" />
+    <option name="kubernetesContext" value="minikube" />
     <option name="mappings">
       <list />
     </option>
@@ -27,7 +27,7 @@
     <option name="skaffoldProfile" />
     <option name="skaffoldWatchMode" value="ON_DEMAND" />
     <option name="statusCheck" value="true" />
-    <option name="verbosity" value="INFO" />
+    <option name="verbosity" value="WARN" />
     <method v="2" />
   </configuration>
 </component>

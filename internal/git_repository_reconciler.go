@@ -26,7 +26,8 @@ import (
 	"github.com/arikkfir/kude-controller/internal/v1alpha1"
 )
 
-type trackingInfo struct {
+type gitRepositoryTracker struct {
+	locker    sync.Locker
 	logger    logr.Logger
 	interval  time.Duration
 	ticker    *time.Ticker
@@ -42,10 +43,9 @@ type GitRepositoryReconciler struct {
 	client.Client        // Kubernetes API client
 	record.EventRecorder // Kubernetes event recorder
 
-	// TODO: use this as a lock to update trackers, and then a lock per repository
-	sync.Locker                             // Synchronization mutex lock
-	Scheme      *runtime.Scheme             // Scheme registry
-	trackers    map[types.UID]*trackingInfo // Mapping of tracking info per GitRepository UID
+	trackersLock sync.Locker                         // Lock for accessing the trackers map
+	Scheme       *runtime.Scheme                     // Scheme registry
+	trackers     map[types.UID]*gitRepositoryTracker // Mapping of tracking info per GitRepository UID
 }
 
 //+kubebuilder:rbac:groups=kude.kfirs.com,resources=gitrepositories,verbs=get;list;watch;create;update;patch;delete
@@ -103,8 +103,8 @@ func (r *GitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 func (r *GitRepositoryReconciler) track(ctx context.Context, gr *v1alpha1.GitRepository) error {
-	r.Lock()
-	defer r.Unlock()
+	r.trackersLock.Lock()
+	defer r.trackersLock.Unlock()
 
 	pi, err := time.ParseDuration(gr.Spec.PollingInterval)
 	if err != nil {
@@ -118,7 +118,7 @@ func (r *GitRepositoryReconciler) track(ctx context.Context, gr *v1alpha1.GitRep
 		r.setStatusCondition(
 			ctx,
 			gr,
-			metav1.Condition{Type: gitRepositoryTrackedCondition, Status: metav1.ConditionFalse, Reason: "InvalidPollingInterval", Message: msg},
+			metav1.Condition{Type: kudeTrackedCondition, Status: metav1.ConditionFalse, Reason: "InvalidPollingInterval", Message: msg},
 			metav1.Condition{Type: "Ready", Status: metav1.ConditionFalse, Reason: "InvalidPollingInterval", Message: msg},
 		)
 		return err
@@ -126,7 +126,8 @@ func (r *GitRepositoryReconciler) track(ctx context.Context, gr *v1alpha1.GitRep
 
 	tracker, ok := r.trackers[gr.UID]
 	if !ok {
-		tracker = &trackingInfo{
+		tracker = &gitRepositoryTracker{
+			locker:    &sync.RWMutex{},
 			logger:    log.FromContext(ctx).WithName("ticker"),
 			interval:  pi,
 			ticker:    time.NewTicker(pi),
@@ -138,42 +139,34 @@ func (r *GitRepositoryReconciler) track(ctx context.Context, gr *v1alpha1.GitRep
 		}
 		r.trackers[gr.UID] = tracker
 
-		go r.loop(gr.UID)
 		r.Eventf(gr, v1.EventTypeNormal, "TrackingStarted", "Started tracking")
 		r.setStatusCondition(
 			ctx, gr,
-			metav1.Condition{Type: gitRepositoryTrackedCondition, Status: metav1.ConditionTrue, Reason: "TrackingStarted"},
+			metav1.Condition{Type: kudeTrackedCondition, Status: metav1.ConditionTrue, Reason: "TrackingStarted"},
 			metav1.Condition{Type: "Ready", Status: metav1.ConditionFalse, Reason: "TrackingStarted"},
 		)
+		go r.loop(gr.UID)
 	} else {
-		if tracker.url != gr.Spec.URL {
-			oldURL := tracker.url
-			newURL := gr.Spec.URL
-			tracker.url = newURL
-			r.Eventf(gr, v1.EventTypeNormal, "TrackingURLUpdated", fmt.Sprintf("Tracker URL changed from '%s' to '%s'", oldURL, newURL))
-		}
-		if tracker.branch != gr.Spec.Branch {
-			oldBranch := tracker.branch
-			newBranch := gr.Spec.Branch
-			tracker.branch = newBranch
-			r.Eventf(gr, v1.EventTypeNormal, "TrackingBranchUpdated", fmt.Sprintf("Tracker branch changed from '%s' to '%s'", oldBranch, newBranch))
-		}
+		tracker.locker.Lock()
+		defer tracker.locker.Unlock()
+		tracker.url = gr.Spec.URL
+		tracker.branch = gr.Spec.Branch
 		if pi != tracker.interval {
-			oldInterval := tracker.interval
-			newInterval := pi
-			tracker.ticker.Reset(newInterval)
-			r.Eventf(gr, v1.EventTypeNormal, "TrackingPollingIntervalUpdated", fmt.Sprintf("Polling interval changed from '%s' to '%s'", oldInterval, newInterval))
+			tracker.ticker.Reset(pi)
 		}
 	}
 	return nil
 }
 
 func (r *GitRepositoryReconciler) stopTracking(ctx context.Context, gr *v1alpha1.GitRepository) error {
-	r.Lock()
-	defer r.Unlock()
+	r.trackersLock.Lock()
+	defer r.trackersLock.Unlock()
 
 	tracker, ok := r.trackers[gr.UID]
 	if ok {
+		tracker.locker.Lock()
+		defer tracker.locker.Unlock()
+
 		tracker.ticker.Stop()
 		delete(r.trackers, gr.UID)
 
@@ -186,7 +179,7 @@ func (r *GitRepositoryReconciler) stopTracking(ctx context.Context, gr *v1alpha1
 			ctx, gr,
 			metav1.Condition{Type: "Ready", Status: metav1.ConditionFalse, Reason: "TrackingStopped"},
 			metav1.Condition{Type: gitRepositoryClonedCondition, Status: metav1.ConditionFalse, Reason: "TrackingStopped"},
-			metav1.Condition{Type: gitRepositoryTrackedCondition, Status: metav1.ConditionFalse, Reason: "TrackingStopped"},
+			metav1.Condition{Type: kudeTrackedCondition, Status: metav1.ConditionFalse, Reason: "TrackingStopped"},
 		)
 	}
 	return nil
@@ -194,34 +187,33 @@ func (r *GitRepositoryReconciler) stopTracking(ctx context.Context, gr *v1alpha1
 
 func (r *GitRepositoryReconciler) loop(uid types.UID) {
 	for {
-		r.Lock()
+		r.trackersLock.Lock()
 		tracker, ok := r.trackers[uid]
 		if !ok {
 			// Ticker was removed, stop this goroutine
-			r.Unlock()
+			r.trackersLock.Unlock()
 			return
 		}
+		r.trackersLock.Unlock()
 
+		tracker.locker.Lock()
 		select {
 		case ts, ok := <-tracker.ticker.C:
 			if ok {
-				r.Unlock()
 				r.tick(log.IntoContext(context.Background(), tracker.logger), uid, tracker, ts)
+				tracker.locker.Unlock()
 			} else {
-				r.Unlock()
+				tracker.locker.Unlock()
 				return
 			}
 		default:
-			r.Unlock()
+			tracker.locker.Unlock()
 			time.Sleep(5 * time.Second)
 		}
 	}
 }
 
-func (r *GitRepositoryReconciler) tick(ctx context.Context, _ types.UID, tracker *trackingInfo, _ time.Time) {
-	r.Lock()
-	defer r.Unlock()
-
+func (r *GitRepositoryReconciler) tick(ctx context.Context, _ types.UID, tracker *gitRepositoryTracker, _ time.Time) {
 	logger := tracker.logger.WithValues("path", tracker.path, "url", tracker.url, "branch", tracker.branch)
 
 	var gr v1alpha1.GitRepository
@@ -284,6 +276,27 @@ func (r *GitRepositoryReconciler) tick(ctx context.Context, _ types.UID, tracker
 		msg := fmt.Sprintf("Failed to get remote: %s", err)
 		r.Eventf(&gr, v1.EventTypeWarning, "RemoteLookupFailed", msg)
 		r.setStatusCondition(ctx, &gr, metav1.Condition{Type: "Ready", Status: metav1.ConditionFalse, Reason: "RemoteLookupFailed", Message: msg})
+		return
+	}
+	if len(origin.Config().URLs) != 1 {
+		msg := fmt.Sprintf("Remote should have one URL only, found %v", origin.Config().URLs)
+		r.Eventf(&gr, v1.EventTypeWarning, "RemoteValidationFailed", msg)
+		r.setStatusCondition(ctx, &gr, metav1.Condition{Type: "Ready", Status: metav1.ConditionFalse, Reason: "RemoteValidationFailed", Message: msg})
+		return
+	} else if origin.Config().URLs[0] != tracker.url {
+		if err := os.RemoveAll(tracker.path); err != nil {
+			logger.Error(err, "Failed to remove failed clone directory")
+		}
+
+		msg := fmt.Sprintf("GitRepository URL changed from '%s' to '%s', reseting", origin.Config().URLs[0], tracker.url)
+		gr.Status.WorkDirectory = ""
+		gr.Status.LastPulledSHA = ""
+		r.Eventf(&gr, v1.EventTypeWarning, "RemoteURLChanged", msg)
+		r.setStatusCondition(
+			ctx, &gr,
+			metav1.Condition{Type: gitRepositoryClonedCondition, Status: metav1.ConditionFalse, Reason: "RemoteURLChanged", Message: msg},
+			metav1.Condition{Type: "Ready", Status: metav1.ConditionFalse, Reason: "RemoteURLChanged", Message: msg},
+		)
 		return
 	}
 
@@ -356,8 +369,8 @@ func (r *GitRepositoryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Client = mgr.GetClient()
 	r.EventRecorder = mgr.GetEventRecorderFor("gitrepository")
 	r.Scheme = mgr.GetScheme()
-	r.Locker = &sync.Mutex{}
-	r.trackers = make(map[types.UID]*trackingInfo)
+	r.trackersLock = &sync.Mutex{}
+	r.trackers = make(map[types.UID]*gitRepositoryTracker)
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.GitRepository{}).
 		Complete(r)

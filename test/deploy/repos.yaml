@@ -6,4 +6,4 @@ metadata:
 spec:
   url: https://github.com/arikkfir/kude-controller.git
   branch: refs/heads/main
-  pollingInterval: 5m
+  pollingInterval: 30s

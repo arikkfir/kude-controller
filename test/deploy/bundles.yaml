@@ -1,0 +1,45 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: kude
+    app.kubernetes.io/component: controller
+  name: kude-controller-additional-permissions
+rules:
+  - apiGroups:
+      - "*"
+    resources:
+      - "*"
+    verbs:
+      - create
+      - get
+      - list
+      - patch
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: kude
+    app.kubernetes.io/component: controller
+  name: kude-controller-additional-permissions
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kude-controller-additional-permissions
+subjects:
+  - kind: ServiceAccount
+    name: controller
+    namespace: kude
+---
+apiVersion: kude.kfirs.com/v1alpha1
+kind: KubectlBundle
+metadata:
+  name: kubectl-bundle
+  namespace: kude
+spec:
+  sourceRepository: kude/kude-controller-main
+  driftDetectionInterval: 30s
+  files:
+    - test/bundles/kubectl/*.yaml

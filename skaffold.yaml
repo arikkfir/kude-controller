@@ -21,9 +21,7 @@ deploy:
     hooks:
       before:
         - host:
-            command: [./delete-cluster-resources.sh]
-            dir: scripts
+            command: [./scripts/delete-cluster-resources.sh]
       after:
         - host:
-            command: [kubectl, apply, -f, "repos.yaml", "bundles.yaml"]
-            dir: test
+            command: [./scripts/deploy-test-resources.sh]

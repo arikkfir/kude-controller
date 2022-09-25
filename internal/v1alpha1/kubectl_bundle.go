@@ -7,15 +7,22 @@ import (
 // KubectlBundleSpec describes the desired state of a KubectlBundle in the cluster. It provides the necessary
 // information on the manifests to be installed in the cluster.
 type KubectlBundleSpec struct {
-	Files []string `json:"files,omitempty"`
+	Files []string `json:"files,omitempty"` // Files to apply
 
 	// +kubebuilder:validation:Pattern=`^[^/]+/[^/]+$`
-	SourceRepository string `json:"sourceRepository,omitempty"`
+	SourceRepository string `json:"sourceRepository,omitempty"` // Source repository to pull the files from
+
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	DriftDetectionInterval string `json:"driftDetectionInterval,omitempty"` // Drift verification interval
+
+	// +kubebuilder:validation:Minimum=1
+	RunsHistoryLimit int `json:"runsHistoryLimit,omitempty"` // Runs history limit
 }
 
 // KubectlBundleStatus defines the observed state of a KubectlBundle.
 type KubectlBundleStatus struct {
-	AppliedSHA string `json:"appliedSHA,omitempty"` // SHA of the last successfully applied commit
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true

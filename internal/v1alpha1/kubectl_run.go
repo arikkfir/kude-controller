@@ -36,7 +36,7 @@ type KubectlRun struct {
 type KubectlRunList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []KubectlBundle `json:"items"`
+	Items           []KubectlRun `json:"items"`
 }
 
 func init() {
