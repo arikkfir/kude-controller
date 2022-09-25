@@ -271,7 +271,9 @@ func (r *KubectlBundleReconciler) tick(ctx context.Context, _ types.UID, tracker
 
 	// Create command
 	args := make([]string, 0)
-	args = append(args, "apply", "-f")
+	args = append(args, "apply")
+	args = append(args, bundle.Spec.Args...)
+	args = append(args, "-f")
 	args = append(args, bundle.Spec.Files...)
 	cmd := exec.CommandContext(ctx, "kubectl", args...)
 	cmd.Dir = repo.Status.WorkDirectory
