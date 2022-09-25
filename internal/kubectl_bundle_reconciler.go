@@ -225,8 +225,12 @@ func (r *KubectlBundleReconciler) tick(ctx context.Context, _ types.UID, tracker
 		return
 	}
 	sort.Stable(sort.Reverse(runs))
-	if len(runs.Items) > bundle.Spec.RunsHistoryLimit {
-		oldRuns := runs.Items[bundle.Spec.RunsHistoryLimit:]
+	limit := bundle.Spec.RunsHistoryLimit
+	if limit <= 0 {
+		limit = 10
+	}
+	if len(runs.Items) > limit {
+		oldRuns := runs.Items[limit:]
 		for _, run := range oldRuns {
 			if err := r.Delete(ctx, &run); err != nil {
 				msg := fmt.Errorf("could not delete old run '%s/%s': %w", run.Namespace, run.Name, err).Error()
