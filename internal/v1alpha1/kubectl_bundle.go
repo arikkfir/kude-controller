@@ -13,6 +13,7 @@ type KubectlBundleSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	Files []string `json:"files,omitempty"` // Files to apply
 
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^[^/]+/[^/]+$`
 	SourceRepository string `json:"sourceRepository,omitempty"` // Source repository to pull the files from
 
