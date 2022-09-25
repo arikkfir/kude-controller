@@ -9,9 +9,9 @@ build:
     useBuildkit: true
     concurrency: 0
   artifacts:
-  - image: controller
-    docker:
-      dockerfile: Dockerfile
+    - image: controller
+      docker:
+        dockerfile: Dockerfile
 deploy:
   kustomize:
     paths:
@@ -21,7 +21,18 @@ deploy:
     hooks:
       before:
         - host:
-            command: [./scripts/delete-cluster-resources.sh]
+            command: [ ./scripts/delete-cluster-resources.sh ]
       after:
         - host:
-            command: [./scripts/deploy-test-resources.sh]
+            command: [ ./scripts/deploy-test-resources.sh ]
+portForward:
+  - namespace: kude
+    resourceType: deployment
+    resourceName: controller
+    port: metrics
+    localPort: 8080
+  - namespace: kude
+    resourceType: deployment
+    resourceName: controller
+    port: health
+    localPort: 8081
