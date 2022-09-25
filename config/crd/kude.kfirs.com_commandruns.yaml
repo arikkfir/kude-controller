@@ -5,20 +5,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: kubectlruns.kude.kfirs.com
+  name: commandruns.kude.kfirs.com
 spec:
   group: kude.kfirs.com
   names:
-    kind: KubectlRun
-    listKind: KubectlRunList
-    plural: kubectlruns
-    singular: kubectlrun
+    kind: CommandRun
+    listKind: CommandRunList
+    plural: commandruns
+    singular: commandrun
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: KubectlRun defines the complete definition of a kubectl run.
+        description: CommandRun defines the complete definition of a command run.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,7 +33,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: KubectlRunSpec defines the specification of the run
+            description: CommandRunSpec defines the specification of the run
             properties:
               args:
                 items:
@@ -45,7 +45,7 @@ spec:
                 type: string
             type: object
           status:
-            description: KubectlRunStatus defines the observed state of a KubectlRun.
+            description: CommandRunStatus defines the observed state of a CommandRun.
             properties:
               error:
                 type: string

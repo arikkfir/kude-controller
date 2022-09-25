@@ -50,9 +50,8 @@ type KubectlBundleReconciler struct {
 //+kubebuilder:rbac:groups=kude.kfirs.com,resources=kubectlbundles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kude.kfirs.com,resources=kubectlbundles/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kude.kfirs.com,resources=kubectlbundles/finalizers,verbs=update
-//+kubebuilder:rbac:groups=kude.kfirs.com,resources=kubectlruns,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kude.kfirs.com,resources=kubectlruns/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kude.kfirs.com,resources=kubectlruns/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kude.kfirs.com,resources=commandruns,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kude.kfirs.com,resources=commandruns/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;patch
 
 // Reconcile continuously aims to move the current state of [GitRepository] objects closer to their desired state.
@@ -214,7 +213,7 @@ func (r *KubectlBundleReconciler) tick(ctx context.Context, _ types.UID, tracker
 		return
 	}
 
-	runs := &v1alpha1.KubectlRunList{}
+	runs := &v1alpha1.CommandRunList{}
 	if err := r.List(ctx, runs, client.InNamespace(bundle.Namespace), client.MatchingLabels{kudeOwnerUID: string(bundle.UID)}); err != nil {
 		msg := fmt.Errorf("could not list previous runs: %w", err).Error()
 		r.Eventf(&bundle, v1.EventTypeWarning, "FailedListingRuns", msg)
@@ -266,7 +265,7 @@ func (r *KubectlBundleReconciler) tick(ctx context.Context, _ types.UID, tracker
 		return
 	}
 
-	// Bundle is ready (though that does not ensure successful runs - those are separate "KubectlRun" objects)
+	// Bundle is ready (though that does not ensure successful runs - those are separate "CommandRun" objects)
 	r.setStatusCondition(ctx, &bundle, metav1.Condition{Type: "Ready", Status: metav1.ConditionTrue, Reason: "PreconditionsSatisfied", Message: ""})
 
 	// Create command
@@ -279,7 +278,7 @@ func (r *KubectlBundleReconciler) tick(ctx context.Context, _ types.UID, tracker
 	cmd.Dir = repo.Status.WorkDirectory
 	run, err := r.createRun(ctx, &bundle, cmd.Dir, cmd.Path, cmd.Args)
 	if err != nil {
-		msg := fmt.Errorf("could not create KubectlRun: %w", err).Error()
+		msg := fmt.Errorf("could not create CommandRun: %w", err).Error()
 		r.Eventf(&bundle, v1.EventTypeWarning, "FailedCreatingRun", msg)
 		return
 	}
@@ -293,7 +292,7 @@ func (r *KubectlBundleReconciler) tick(ctx context.Context, _ types.UID, tracker
 		run.Status.ExitCode = -1
 		run.Status.Error = fmt.Errorf("failed to start command: %w", err).Error()
 		if err := r.Status().Update(ctx, run); err != nil {
-			log.FromContext(ctx).Error(err, "Failed to update KubectlRun status")
+			log.FromContext(ctx).Error(err, "Failed to update CommandRun status")
 		}
 		return
 	}
@@ -306,12 +305,12 @@ func (r *KubectlBundleReconciler) tick(ctx context.Context, _ types.UID, tracker
 		run.Status.Error = fmt.Errorf("command failed: %w", err).Error()
 	}
 	if err := r.Status().Update(ctx, run); err != nil {
-		log.FromContext(ctx).Error(err, "Failed to update KubectlRun status")
+		log.FromContext(ctx).Error(err, "Failed to update CommandRun status")
 	}
 }
 
-func (r *KubectlBundleReconciler) createRun(ctx context.Context, bundle *v1alpha1.KubectlBundle, dir, command string, args []string) (*v1alpha1.KubectlRun, error) {
-	run := v1alpha1.KubectlRun{
+func (r *KubectlBundleReconciler) createRun(ctx context.Context, bundle *v1alpha1.KubectlBundle, dir, command string, args []string) (*v1alpha1.CommandRun, error) {
+	run := v1alpha1.CommandRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				kudeOwnerUID: string(bundle.UID),
@@ -323,7 +322,7 @@ func (r *KubectlBundleReconciler) createRun(ctx context.Context, bundle *v1alpha
 				*metav1.NewControllerRef(bundle, v1alpha1.GroupVersion.WithKind("KubectlBundle")),
 			},
 		},
-		Spec: v1alpha1.KubectlRunSpec{
+		Spec: v1alpha1.CommandRunSpec{
 			Directory: dir,
 			Command:   command,
 			Args:      args,

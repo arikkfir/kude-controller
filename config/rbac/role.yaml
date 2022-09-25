@@ -18,6 +18,26 @@ rules:
 - apiGroups:
   - kude.kfirs.com
   resources:
+  - commandruns
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kude.kfirs.com
+  resources:
+  - commandruns/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - kude.kfirs.com
+  resources:
   - gitrepositories
   verbs:
   - create
@@ -63,32 +83,6 @@ rules:
   - kude.kfirs.com
   resources:
   - kubectlbundles/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kude.kfirs.com
-  resources:
-  - kubectlruns
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - kude.kfirs.com
-  resources:
-  - kubectlruns/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - kude.kfirs.com
-  resources:
-  - kubectlruns/status
   verbs:
   - get
   - patch

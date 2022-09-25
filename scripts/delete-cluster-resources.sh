@@ -3,7 +3,7 @@
 set -exuo pipefail
 
 set +e
-for rt in GitRepository KubectlBundle KubectlRun; do
+for rt in GitRepository KubectlBundle CommandRun; do
   kubectl get --namespace kude ${rt} --output=name \
     | xargs -I@ kubectl patch --namespace kude @ --type=json '--patch=[{"op":"remove","path":"/metadata/finalizers"}]'
 done

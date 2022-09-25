@@ -1,9 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - kude.kfirs.com_commandruns.yaml
   - kude.kfirs.com_gitrepositories.yaml
   - kude.kfirs.com_helmbundles.yaml
   - kude.kfirs.com_kubectlbundles.yaml
-  - kude.kfirs.com_kubectlruns.yaml
   - kude.kfirs.com_kudebundles.yaml
   - kude.kfirs.com_kustomizebundles.yaml
