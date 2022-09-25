@@ -38,12 +38,17 @@ spec:
               in the cluster. It provides the necessary information on the manifests
               to be installed in the cluster.
             properties:
+              args:
+                items:
+                  type: string
+                type: array
               driftDetectionInterval:
                 minLength: 1
                 type: string
               files:
                 items:
                   type: string
+                minItems: 1
                 type: array
               runsHistoryLimit:
                 minimum: 1
