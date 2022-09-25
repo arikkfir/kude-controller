@@ -16,6 +16,8 @@ deploy:
   kustomize:
     paths:
       - config
+    buildArgs:
+      - --reorder none
     hooks:
       before:
         - host:
