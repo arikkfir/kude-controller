@@ -1,5 +1,11 @@
 # kude-controller
 
+![Maintainer](https://img.shields.io/badge/maintainer-arikkfir-blue)
+![GoVersion](https://img.shields.io/github/go-mod/go-version/arikkfir/kude-controller.svg)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/arikkfir/kude-controller)
+[![GoReportCard](https://goreportcard.com/badge/github.com/arikkfir/kude-controller)](https://goreportcard.com/report/github.com/arikkfir/kude-controller)
+[![codecov](https://codecov.io/gh/arikkfir/kude-controller/branch/main/graph/badge.svg?token=QP3OAILB25)](https://codecov.io/gh/arikkfir/kude-controller)
+
 ## Development
 
 ### Setup
