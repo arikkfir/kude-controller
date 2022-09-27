@@ -35,6 +35,9 @@ jobs:
             golang-${{ runner.os }}-
       - run: go mod download
       - run: go vet ./...
+      - run: go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+      - run: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+      - run: setup-envtest use 1.25.0 --bin-dir=./bin
       - run: |
           go test -ldflags "-X 'github.com/arikkfir/kude-controller/internal.gitCommit=${GITHUB_SHA}'" \
                   -v \
