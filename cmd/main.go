@@ -70,7 +70,7 @@ func main() {
 	}
 
 	// Setup GitRepository reconciler
-	if err := (&internal.GitRepositoryReconciler{}).SetupWithManager(mgr); err != nil {
+	if err := (&internal.GitRepositoryReconciler{WorkDir: "/data"}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Unable to create controller", "controller", "GitRepository")
 		os.Exit(1)
 	}

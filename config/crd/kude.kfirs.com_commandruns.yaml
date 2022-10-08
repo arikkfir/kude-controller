@@ -41,8 +41,12 @@ spec:
                 type: array
               command:
                 type: string
+              commitSHA:
+                type: string
               directory:
                 type: string
+            required:
+              - commitSHA
             type: object
           status:
             description: CommandRunStatus defines the observed state of a CommandRun.

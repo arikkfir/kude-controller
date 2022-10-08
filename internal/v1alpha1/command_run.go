@@ -6,6 +6,7 @@ import (
 
 // CommandRunSpec defines the specification of the run
 type CommandRunSpec struct {
+	CommitSHA string   `json:"commitSHA"`           // The commit SHA this command runs for
 	Directory string   `json:"directory,omitempty"` // Local directory in the kude-controller pod where the command is executed
 	Command   string   `json:"command,omitempty"`   // Executable (e.g. "kubectl")
 	Args      []string `json:"args,omitempty"`      // Arguments passed to the command

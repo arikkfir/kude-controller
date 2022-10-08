@@ -50,3 +50,4 @@ spec:
               cpu: 100m
               memory: 128Mi
       serviceAccountName: controller
+      # TODO: add ephemeral-storage for "/data" (clones)
