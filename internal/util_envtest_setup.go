@@ -41,6 +41,7 @@ func (tw *testWriter) Write(p []byte) (n int, err error) {
 
 func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Client, k8sMgr manager.Manager, cleanup func()) {
 	t.Helper()
+	// TODO: consider using "t.Cleanup(...)" instead of returning a cleanup function
 
 	logLevel := zapr.NewAtomicLevelAt(zapr.InfoLevel)
 	opts := zap.Options{
