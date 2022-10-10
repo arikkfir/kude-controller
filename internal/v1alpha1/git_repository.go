@@ -10,6 +10,7 @@ type GitRepositorySpec struct {
 	URL string `json:"url,omitempty"` // URL of the Git repository
 
 	// +kubebuilder:validation:Required
+	// TODO: rename "Branch" to "Ref", and let the user specify "refs/heads/..." or "refs/tags/..." (or even specific SHA)
 	Branch string `json:"branch,omitempty"` // Branch of the Git repository to monitor
 
 	// +kubebuilder:validation:Required
