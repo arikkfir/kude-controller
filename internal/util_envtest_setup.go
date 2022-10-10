@@ -42,9 +42,8 @@ func (tw *testWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Client, k8sMgr manager.Manager, cleanup func()) {
+func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Client, k8sMgr manager.Manager) {
 	t.Helper()
-	// TODO: consider using "t.Cleanup(...)" instead of returning a cleanup function
 
 	logLevel := zapr.NewAtomicLevelAt(zapr.InfoLevel)
 	opts := zap.Options{
@@ -54,7 +53,6 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 		TimeEncoder: zapcore.TimeEncoderOfLayout(time.StampMilli),
 	}
 	logger := zap.New(zap.UseFlagOptions(&opts))
-	ctx, cancel := context.WithCancel(context.Background())
 
 	var (
 		k8sConfig       *rest.Config
@@ -85,23 +83,22 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	} else {
 		k8sConfig = cfg
 	}
-	cleanup = func() {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
 		t.Log("Stopping test environment")
 		cancel()
 		if err := testEnv.Stop(); err != nil {
 			t.Errorf("failed to stop test environment: %v", err)
 		}
-	}
+	})
 
 	t.Log("Registering Kubernetes resource types scheme")
 	if err := v1alpha1.AddToScheme(scheme.Scheme); err != nil {
-		cleanup()
 		t.Fatalf("failed to register Kubernetes resource types scheme: %v", err)
 	}
 
 	t.Log("Creating Kubernetes client")
 	if c, err := client.New(k8sConfig, client.Options{Scheme: scheme.Scheme}); err != nil {
-		cleanup()
 		t.Fatalf("failed to create Kubernetes client: %v", err)
 	} else {
 		k8sClient = c
@@ -114,7 +111,6 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 		MetricsBindAddress: "0", // On MacOS if not set to "0", firewall will request approval on every run
 	}
 	if mgr, err := ctrl.NewManager(k8sConfig, mgrOptions); err != nil {
-		cleanup()
 		t.Fatalf("failed to create controller manager: %v", err)
 	} else {
 		k8sMgr = mgr
@@ -123,22 +119,20 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	t.Log("Setting up reconcilers")
 	for _, reconciler := range reconcilers {
 		if err := reconciler.SetupWithManager(k8sMgr); err != nil {
-			cleanup()
 			t.Fatalf("failed to setup reconciler '%s': %v", reflect.TypeOf(reconciler).Elem().Name(), err)
 		}
 	}
 
 	// Watch and print relevant events
-	cset, err := kubernetes.NewForConfig(k8sConfig)
+	clientset, err := kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
-		cleanup()
 		t.Fatalf("Failed creating Events client: %+v", err)
 	}
-	eventsWatcher, err := cset.EventsV1().Events("default").Watch(ctx, metav1.ListOptions{})
+	eventsWatcher, err := clientset.EventsV1().Events("default").Watch(ctx, metav1.ListOptions{})
 	if err != nil {
-		cleanup()
 		t.Fatalf("Failed creating events watcher: %+v", err)
 	}
+	t.Cleanup(eventsWatcher.Stop)
 	go func() {
 		for {
 			e, ok := <-eventsWatcher.ResultChan()
@@ -160,7 +154,6 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	}()
 
 	go func() {
-		defer eventsWatcher.Stop()
 		t.Log("Starting controller manager")
 		if err := k8sMgr.Start(ctx); err != nil {
 			t.Errorf("failed to start controller manager: %v", err)

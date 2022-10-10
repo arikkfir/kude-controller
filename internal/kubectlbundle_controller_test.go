@@ -12,8 +12,7 @@ import (
 )
 
 func TestCreateKubectlBundle(t *testing.T) {
-	k8sClient, _, cleanup := setupTestEnv(t, &KubectlBundleReconciler{})
-	defer cleanup()
+	k8sClient, _ := setupTestEnv(t, &KubectlBundleReconciler{})
 
 	typeName := reflect.TypeOf(v1alpha1.KubectlBundle{}).Name()
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)

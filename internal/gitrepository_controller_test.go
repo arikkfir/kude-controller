@@ -30,8 +30,7 @@ func init() {
 
 func TestIgnoreMissingResource(t *testing.T) {
 	reconciler := &GitRepositoryReconciler{}
-	_, _, cleanup := setupTestEnv(t, reconciler)
-	defer cleanup()
+	_, _ = setupTestEnv(t, reconciler)
 
 	time.Sleep(5 * time.Second) // Give manager and cache time to start
 	res, err := reconciler.Reconcile(context.Background(), ctrl.Request{
@@ -45,8 +44,7 @@ func TestIgnoreMissingResource(t *testing.T) {
 }
 
 func TestGitRepositoryResourceInitialization(t *testing.T) {
-	k8sClient, _, cleanup := setupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
-	defer cleanup()
+	k8sClient, _ := setupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
@@ -94,8 +92,7 @@ func TestGitRepositoryClone(t *testing.T) {
 	require.NoErrorf(t, repository.commitFile("file1", "content1"), "failed to commit file")
 	defer os.RemoveAll(repository.dir)
 
-	k8sClient, _, cleanup := setupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
-	defer cleanup()
+	k8sClient, _ := setupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
