@@ -154,7 +154,7 @@ func (r *GitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			// Clone
 			cloneOptions := git.CloneOptions{URL: o.Spec.URL, ReferenceName: plumbing.ReferenceName(o.Spec.Branch), Progress: &b}
 			if _, err := git.PlainClone(o.Status.WorkDirectory, false, &cloneOptions); err != nil {
-				r.Recorder.Eventf(&o, v1.EventTypeWarning, "CloneFailed", "Failed to clone repository:\n%s", b.String())
+				r.Recorder.Eventf(&o, v1.EventTypeWarning, "CloneFailed", "Failed to clone repository: %s\n%s", err, b.String())
 
 				// Clone failed - remove partial directory (if any)
 				if err := os.RemoveAll(o.Status.WorkDirectory); err != nil {
