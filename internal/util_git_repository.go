@@ -34,7 +34,7 @@ func newGitRepository(name string) (*gitRepository, error) {
 		url: gitRepositoryUrl,
 		dir: dir,
 	}
-	if err := r.git("init"); err != nil {
+	if err := r.git("init", "--initial-branch=main"); err != nil {
 		return nil, fmt.Errorf("failed to initialize Git repository: %w", err)
 	} else if err := r.git("config", "user.name", "kude"); err != nil {
 		return nil, fmt.Errorf("failed to set Git user name: %w", err)
