@@ -108,7 +108,7 @@ func (r *GitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Set work path if missing/incorrect
 	if o.Status.WorkDirectory != filepath.Join(r.WorkDir, string(o.UID)) {
-		o.Status.WorkDirectory = filepath.Join("/data", string(o.UID))
+		o.Status.WorkDirectory = filepath.Join(r.WorkDir, string(o.UID))
 		if err := r.Client.Status().Update(ctx, &o); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to update work directory in GitRepository status: %w", err)
 		} else {
