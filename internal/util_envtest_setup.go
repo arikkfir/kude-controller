@@ -62,7 +62,7 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 
 	t.Log("Obtaining current work directory")
 	if wd, err := os.Getwd(); err != nil {
-		t.Errorf("failed to get working directory: %v", err)
+		t.Fatalf("failed to get working directory: %v", err)
 	} else {
 		workDir = filepath.Clean(filepath.Join(wd, ".."))
 		binaryAssetsDir = filepath.Join(workDir, "bin", "k8s", strings.Join([]string{k8sVersion, runtime.GOOS, runtime.GOARCH}, "-"))
@@ -78,7 +78,7 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 
 	t.Log("Starting test environment")
 	if cfg, err := testEnv.Start(); err != nil {
-		t.Errorf("failed to start test environment: %v", err)
+		t.Fatalf("failed to start test environment: %v", err)
 	} else {
 		k8sConfig = cfg
 	}
@@ -93,13 +93,13 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	t.Log("Registering Kubernetes resource types scheme")
 	if err := v1alpha1.AddToScheme(scheme.Scheme); err != nil {
 		cleanup()
-		t.Errorf("failed to register Kubernetes resource types scheme: %v", err)
+		t.Fatalf("failed to register Kubernetes resource types scheme: %v", err)
 	}
 
 	t.Log("Creating Kubernetes client")
 	if c, err := client.New(k8sConfig, client.Options{Scheme: scheme.Scheme}); err != nil {
 		cleanup()
-		t.Errorf("failed to create Kubernetes client: %v", err)
+		t.Fatalf("failed to create Kubernetes client: %v", err)
 	} else {
 		k8sClient = c
 	}
@@ -112,7 +112,7 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	}
 	if mgr, err := ctrl.NewManager(k8sConfig, mgrOptions); err != nil {
 		cleanup()
-		t.Errorf("failed to create controller manager: %v", err)
+		t.Fatalf("failed to create controller manager: %v", err)
 	} else {
 		k8sMgr = mgr
 	}
@@ -121,7 +121,7 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	for _, reconciler := range reconcilers {
 		if err := reconciler.SetupWithManager(k8sMgr); err != nil {
 			cleanup()
-			t.Errorf("failed to setup reconciler '%s': %v", reflect.TypeOf(reconciler).Elem().Name(), err)
+			t.Fatalf("failed to setup reconciler '%s': %v", reflect.TypeOf(reconciler).Elem().Name(), err)
 		}
 	}
 
