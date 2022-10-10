@@ -5,6 +5,9 @@ import (
 	"github.com/arikkfir/kude-controller/internal/v1alpha1"
 	zapr "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	v1 "k8s.io/api/events/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"os"
@@ -125,7 +128,39 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 		}
 	}
 
+	// Watch and print relevant events
+	cset, err := kubernetes.NewForConfig(k8sConfig)
+	if err != nil {
+		cleanup()
+		t.Fatalf("Failed creating Events client: %+v", err)
+	}
+	eventsWatcher, err := cset.EventsV1().Events("default").Watch(ctx, metav1.ListOptions{})
+	if err != nil {
+		cleanup()
+		t.Fatalf("Failed creating events watcher: %+v", err)
+	}
 	go func() {
+		for {
+			e, ok := <-eventsWatcher.ResultChan()
+			if !ok {
+				return
+			}
+			if event, ok := e.Object.(*v1.Event); ok {
+				involvedObject := event.Regarding
+				if involvedObject.APIVersion == v1alpha1.GroupVersion.Group+"/"+v1alpha1.GroupVersion.Version {
+					msg := event.Note
+					msg = strings.ReplaceAll(msg, "\r", "\n↑ ")
+					t.Logf("%s event '%s' for %s '%s/%s' (%s):\n%s",
+						event.Type, event.Reason,
+						involvedObject.Kind, involvedObject.Namespace, involvedObject.Name, involvedObject.UID,
+						msg)
+				}
+			}
+		}
+	}()
+
+	go func() {
+		defer eventsWatcher.Stop()
 		t.Log("Starting controller manager")
 		if err := k8sMgr.Start(ctx); err != nil {
 			t.Errorf("failed to start controller manager: %v", err)
