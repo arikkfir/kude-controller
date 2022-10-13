@@ -15,7 +15,20 @@ spec:
     singular: gitrepository
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.url
+      name: URL
+      type: string
+    - jsonPath: .spec.branch
+      name: Branch
+      type: string
+    - jsonPath: .spec.pollingInterval
+      name: Interval
+      type: string
+    - jsonPath: .status.lastPulledSHA
+      name: SHA
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: GitRepository defines a single monitored Git repository

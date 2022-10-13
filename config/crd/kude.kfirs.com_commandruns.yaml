@@ -15,7 +15,20 @@ spec:
     singular: commandrun
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.commitSHA
+      name: Commit SHA
+      type: string
+    - jsonPath: .spec.args
+      name: Command
+      type: string
+    - jsonPath: .status.exitCode
+      name: Exit Code
+      type: string
+    - jsonPath: .status.error
+      name: Error
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: CommandRun defines the complete definition of a command run.

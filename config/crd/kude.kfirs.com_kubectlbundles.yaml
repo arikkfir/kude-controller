@@ -15,7 +15,20 @@ spec:
     singular: kubectlbundle
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.files
+      name: Files
+      type: string
+    - jsonPath: .spec.sourceRepository
+      name: Repository
+      type: string
+    - jsonPath: .spec.driftDetectionInterval
+      name: Interval
+      type: string
+    - jsonPath: .spec.runsHistoryLimit
+      name: History limit
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: KubectlBundle defines a set of Kubernetes manifest YAML files

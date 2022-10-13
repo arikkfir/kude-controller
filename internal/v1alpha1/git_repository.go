@@ -33,6 +33,10 @@ type GitRepositoryStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="URL",type="string",JSONPath=".spec.url"
+//+kubebuilder:printcolumn:name="Branch",type="string",JSONPath=".spec.branch"
+//+kubebuilder:printcolumn:name="Interval",type="string",JSONPath=".spec.pollingInterval"
+//+kubebuilder:printcolumn:name="SHA",type="string",JSONPath=".status.lastPulledSHA"
 
 // GitRepository defines a single monitored Git repository
 type GitRepository struct {

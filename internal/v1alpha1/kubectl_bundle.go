@@ -37,6 +37,10 @@ type KubectlBundleStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Files",type="string",JSONPath=".spec.files"
+//+kubebuilder:printcolumn:name="Repository",type="string",JSONPath=".spec.sourceRepository"
+//+kubebuilder:printcolumn:name="Interval",type="string",JSONPath=".spec.driftDetectionInterval"
+//+kubebuilder:printcolumn:name="History limit",type="string",JSONPath=".spec.runsHistoryLimit"
 
 // KubectlBundle defines a set of Kubernetes manifest YAML files to be applied in the cluster.
 type KubectlBundle struct {
