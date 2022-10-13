@@ -7,22 +7,27 @@ import (
 // KubectlBundleSpec describes the desired state of a KubectlBundle in the cluster. It provides the necessary
 // information on the manifests to be installed in the cluster.
 type KubectlBundleSpec struct {
-	Args []string `json:"args,omitempty"` // Arguments to pass to the kubectl command
+	// Arguments to pass to the kubectl command
+	Args []string `json:"args,omitempty"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
-	Files []string `json:"files,omitempty"` // Files to apply
+	// Files to apply
+	Files []string `json:"files"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^[^/]+/[^/]+$`
-	SourceRepository string `json:"sourceRepository,omitempty"` // Source repository to pull the files from
+	// Source repository to pull the files from
+	SourceRepository string `json:"sourceRepository"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	DriftDetectionInterval string `json:"driftDetectionInterval,omitempty"` // Drift verification interval
+	// Drift verification interval
+	DriftDetectionInterval string `json:"driftDetectionInterval"`
 
 	// +kubebuilder:validation:Minimum=1
-	RunsHistoryLimit int `json:"runsHistoryLimit,omitempty"` // Runs history limit
+	// Runs history limit
+	RunsHistoryLimit int `json:"runsHistoryLimit,omitempty"`
 }
 
 // KubectlBundleStatus defines the observed state of a KubectlBundle.
@@ -38,7 +43,7 @@ type KubectlBundle struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   KubectlBundleSpec   `json:"spec,omitempty"`
+	Spec   KubectlBundleSpec   `json:"spec"`
 	Status KubectlBundleStatus `json:"status,omitempty"`
 }
 

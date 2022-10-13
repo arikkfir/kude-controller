@@ -7,22 +7,28 @@ import (
 // GitRepositorySpec is the desired state of a monitored Git repository.
 type GitRepositorySpec struct {
 	// +kubebuilder:validation:Required
-	URL string `json:"url,omitempty"` // URL of the Git repository
+	// URL of the Git repository
+	URL string `json:"url"`
 
 	// +kubebuilder:validation:Required
-	// TODO: rename "Branch" to "Ref", and let the user specify "refs/heads/..." or "refs/tags/..." (or even specific SHA)
-	Branch string `json:"branch,omitempty"` // Branch of the Git repository to monitor
+	// Branch of the Git repository to monitor (TODO: rename to "Ref"; let user specify "refs/heads/...", "refs/tags/..." or SHA)
+	Branch string `json:"branch"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	PollingInterval string `json:"pollingInterval,omitempty"` // Polling interval for the Git repository
+	// Polling interval for the Git repository
+	PollingInterval string `json:"pollingInterval"`
 }
 
 // GitRepositoryStatus defines the observed state of GitRepository
 type GitRepositoryStatus struct {
-	LastPulledSHA string             `json:"lastPulledSHA,omitempty"` // SHA of the last successfully applied commit
-	WorkDirectory string             `json:"workDirectory,omitempty"` // Directory where the Git repository is cloned
-	Conditions    []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	// SHA of the last successfully applied commit
+	LastPulledSHA string `json:"lastPulledSHA,omitempty"`
+
+	// Directory where the Git repository is cloned
+	WorkDirectory string `json:"workDirectory,omitempty"`
+
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
@@ -33,7 +39,7 @@ type GitRepository struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GitRepositorySpec   `json:"spec,omitempty"`
+	Spec   GitRepositorySpec   `json:"spec"`
 	Status GitRepositoryStatus `json:"status,omitempty"`
 }
 

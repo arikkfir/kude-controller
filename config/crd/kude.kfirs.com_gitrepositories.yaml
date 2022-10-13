@@ -37,12 +37,21 @@ spec:
               repository.
             properties:
               branch:
+                description: 'Branch of the Git repository to monitor (TODO: rename
+                  to "Ref"; let user specify "refs/heads/...", "refs/tags/..." or
+                  SHA)'
                 type: string
               pollingInterval:
+                description: Polling interval for the Git repository
                 minLength: 1
                 type: string
               url:
+                description: URL of the Git repository
                 type: string
+            required:
+            - branch
+            - pollingInterval
+            - url
             type: object
           status:
             description: GitRepositoryStatus defines the observed state of GitRepository
@@ -116,10 +125,14 @@ spec:
                   type: object
                 type: array
               lastPulledSHA:
+                description: SHA of the last successfully applied commit
                 type: string
               workDirectory:
+                description: Directory where the Git repository is cloned
                 type: string
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

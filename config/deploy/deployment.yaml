@@ -49,5 +49,22 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+          volumeMounts:
+            - mountPath: /data
+              name: data
+              readOnly: false
       serviceAccountName: controller
-      # TODO: add ephemeral-storage for "/data" (clones)
+      volumes:
+        - name: data
+          ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 1Gi
+                  limits:
+                    storage: 3Gi
+                storageClassName: standard
+                volumeMode: Filesystem

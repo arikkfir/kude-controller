@@ -39,23 +39,32 @@ spec:
               to be installed in the cluster.
             properties:
               args:
+                description: Arguments to pass to the kubectl command
                 items:
                   type: string
                 type: array
               driftDetectionInterval:
+                description: Drift verification interval
                 minLength: 1
                 type: string
               files:
+                description: Files to apply
                 items:
                   type: string
                 minItems: 1
                 type: array
               runsHistoryLimit:
+                description: Runs history limit
                 minimum: 1
                 type: integer
               sourceRepository:
+                description: Source repository to pull the files from
                 pattern: ^[^/]+/[^/]+$
                 type: string
+            required:
+            - driftDetectionInterval
+            - files
+            - sourceRepository
             type: object
           status:
             description: KubectlBundleStatus defines the observed state of a KubectlBundle.
@@ -129,6 +138,8 @@ spec:
                   type: object
                 type: array
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

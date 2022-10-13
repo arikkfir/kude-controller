@@ -36,27 +36,40 @@ spec:
             description: CommandRunSpec defines the specification of the run
             properties:
               args:
+                description: Arguments passed to the command
                 items:
                   type: string
                 type: array
               command:
+                description: Executable (e.g. "kubectl")
                 type: string
               commitSHA:
+                description: The commit SHA this command runs for
                 type: string
               directory:
+                description: Local directory in the kude-controller pod where the
+                  command is executed
                 type: string
             required:
-              - commitSHA
+            - args
+            - command
+            - commitSHA
+            - directory
             type: object
           status:
             description: CommandRunStatus defines the observed state of a CommandRun.
             properties:
               error:
+                description: Optional additional error message
                 type: string
               exitCode:
+                description: Exit code of the command
                 type: integer
               output:
+                description: Combined output of stdout and stderr of the command
                 type: string
+            required:
+            - exitCode
             type: object
         type: object
     served: true
