@@ -162,21 +162,17 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				} else {
 					return ctrl.Result{RequeueAfter: interval}, nil
 				}
-			} else {
-				if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "Failed", "Last run failed, retrying"); err != nil {
-					return res, err
-				} else if res.Requeue {
-					r.Recorder.Eventf(&o, v1.EventTypeWarning, "RetryingLastRun", "Last run (%s) failed, retrying", lastRun.Name)
-					return res, err
-				}
-			}
-		} else {
-			if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "OutOfDate", "Last run does not match current repository SHA"); err != nil {
+			} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "Failed", "Last run failed, retrying"); err != nil {
 				return res, err
 			} else if res.Requeue {
-				r.Recorder.Eventf(&o, v1.EventTypeNormal, "OutOfDate", "Last run (%s) does not match current repository SHA '%s'", lastRun.Name, repo.Status.LastPulledSHA)
+				r.Recorder.Eventf(&o, v1.EventTypeWarning, "RetryingLastRun", "Last run (%s) failed, retrying", lastRun.Name)
 				return res, err
 			}
+		} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "OutOfDate", "Last run does not match current repository SHA"); err != nil {
+			return res, err
+		} else if res.Requeue {
+			r.Recorder.Eventf(&o, v1.EventTypeNormal, "OutOfDate", "Last run (%s) does not match current repository SHA '%s'", lastRun.Name, repo.Status.LastPulledSHA)
+			return res, err
 		}
 	} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "NotApplied", "Bundle has no runs yet"); res.Requeue || err != nil {
 		return res, err
