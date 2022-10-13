@@ -123,11 +123,13 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Delete all runs that are over the limit
 	var lastRun *v1alpha1.CommandRun = nil
-	if len(runs.Items) > limit {
+	if len(runs.Items) > 0 {
 		lastRun = &runs.Items[0]
-		for _, run := range runs.Items[limit:] {
-			if err := r.Client.Delete(ctx, &run); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to delete command run '%s/%s': %w", run.Namespace, run.Name, err)
+		if len(runs.Items) > limit {
+			for _, run := range runs.Items[limit:] {
+				if err := r.Client.Delete(ctx, &run); err != nil {
+					return ctrl.Result{}, fmt.Errorf("failed to delete command run '%s/%s': %w", run.Namespace, run.Name, err)
+				}
 			}
 		}
 	}
