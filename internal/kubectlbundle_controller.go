@@ -126,11 +126,13 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if len(runs.Items) > 0 {
 		lastRun = &runs.Items[0]
 		if len(runs.Items) > limit {
+			r.Recorder.Eventf(&o, v1.EventTypeWarning, "RunHistoryOverflow", "Found more than %d command runs for this bundle, deleting oldest %d", limit, len(runs.Items)-limit)
 			for _, run := range runs.Items[limit:] {
 				if err := r.Client.Delete(ctx, &run); err != nil {
 					return ctrl.Result{}, fmt.Errorf("failed to delete command run '%s/%s': %w", run.Namespace, run.Name, err)
 				}
 			}
+			runs.Items = runs.Items[:limit]
 		}
 	}
 
@@ -167,6 +169,15 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "NotApplied", "Bundle has no runs yet"); err != nil || res.Requeue {
 		return res, err
+	}
+
+	// Delete the oldest run if we're at the limit
+	if len(runs.Items) == limit {
+		run := &runs.Items[limit-1]
+		if err := r.Client.Delete(ctx, run); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to delete oldest command run '%s/%s': %w", run.Namespace, run.Name, err)
+		}
+		runs.Items = runs.Items[:limit-1]
 	}
 
 	args := make([]string, 0)
