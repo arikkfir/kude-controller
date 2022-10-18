@@ -207,7 +207,7 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if err := r.Client.Status().Update(ctx, run); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to update CommandRun status: %w", err)
 		}
-		if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionTrue, "UpToDate", "Successful run"); err != nil {
+		if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionTrue, "UpToDate", "Last run matches current repository SHA"); err != nil {
 			return res, err
 		} else {
 			return ctrl.Result{RequeueAfter: interval}, nil
