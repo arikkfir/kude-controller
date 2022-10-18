@@ -154,27 +154,18 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if lastRun != nil {
 		if lastRun.Spec.CommitSHA == repo.Status.LastPulledSHA {
 			if lastRun.Status.ExitCode == 0 {
-				if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionTrue, "UpToDate", "Last run matches current repository SHA"); err != nil {
-					return res, err
-				} else if res.Requeue {
-					r.Recorder.Eventf(&o, v1.EventTypeNormal, "UpToDate", "Last run matches current repository SHA")
+				if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionTrue, "UpToDate", "Last run matches current repository SHA"); err != nil || res.Requeue {
 					return res, err
 				} else {
 					return ctrl.Result{RequeueAfter: interval}, nil
 				}
-			} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "Failed", "Last run failed, retrying"); err != nil {
-				return res, err
-			} else if res.Requeue {
-				r.Recorder.Eventf(&o, v1.EventTypeWarning, "RetryingLastRun", "Last run (%s) failed, retrying", lastRun.Name)
+			} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "Failed", "Last run failed, retrying"); err != nil || res.Requeue {
 				return res, err
 			}
-		} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "OutOfDate", "Last run does not match current repository SHA"); err != nil {
-			return res, err
-		} else if res.Requeue {
-			r.Recorder.Eventf(&o, v1.EventTypeNormal, "OutOfDate", "Last run (%s) does not match current repository SHA '%s'", lastRun.Name, repo.Status.LastPulledSHA)
+		} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "OutOfDate", "Last run does not match current repository SHA"); err != nil || res.Requeue {
 			return res, err
 		}
-	} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "NotApplied", "Bundle has no runs yet"); res.Requeue || err != nil {
+	} else if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionFalse, "NotApplied", "Bundle has no runs yet"); err != nil || res.Requeue {
 		return res, err
 	}
 
@@ -197,6 +188,7 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	cmd.Stdout = &b
 	cmd.Stderr = &b
 	if err := cmd.Start(); err != nil {
+		r.Recorder.Eventf(&o, v1.EventTypeWarning, "FailedStartingRun", "Failed to start run '%s': %s\n%s", run.Name, err.Error(), b.String())
 		run.Status.ExitCode = -1
 		run.Status.Error = fmt.Errorf("failed to start command: %w", err).Error()
 		return ctrl.Result{RequeueAfter: interval}, r.Client.Status().Update(ctx, run)
@@ -204,6 +196,7 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Wait for the command to finish, then update status
 	if err := cmd.Wait(); err != nil {
+		r.Recorder.Eventf(&o, v1.EventTypeWarning, "RunFailed", "Run '%s' failed: %s\n%s", run.Name, err.Error(), b.String())
 		run.Status.ExitCode = cmd.ProcessState.ExitCode()
 		run.Status.Output = b.String()
 		run.Status.Error = fmt.Errorf("command failed: %w", err).Error()
@@ -217,7 +210,6 @@ func (r *KubectlBundleReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if res, err := r.setCondition(ctx, &o, typeUpToDateKubectlBundle, metav1.ConditionTrue, "UpToDate", "Successful run"); err != nil {
 			return res, err
 		} else {
-			r.Recorder.Eventf(&o, v1.EventTypeNormal, "SuccessfulRun", "Successfully applied bundle")
 			return ctrl.Result{RequeueAfter: interval}, nil
 		}
 	}
