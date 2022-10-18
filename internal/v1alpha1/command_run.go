@@ -33,6 +33,7 @@ type CommandRunStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Created",type="string",JSONPath=".metadata.creationTimestamp"
 //+kubebuilder:printcolumn:name="Commit SHA",type="string",JSONPath=".spec.commitSHA"
 //+kubebuilder:printcolumn:name="Command",type="string",JSONPath=".spec.args"
 //+kubebuilder:printcolumn:name="Exit Code",type="string",JSONPath=".status.exitCode"

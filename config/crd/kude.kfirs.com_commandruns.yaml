@@ -16,6 +16,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Created
+      type: string
     - jsonPath: .spec.commitSHA
       name: Commit SHA
       type: string
