@@ -43,6 +43,7 @@ type KubectlBundleStatus struct {
 //+kubebuilder:printcolumn:name="History limit",type="string",JSONPath=".spec.runsHistoryLimit"
 
 // KubectlBundle defines a set of Kubernetes manifest YAML files to be applied in the cluster.
+//go:generate go run ../../scripts/objecter/objecter.go -type=KubectlBundle
 type KubectlBundle struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

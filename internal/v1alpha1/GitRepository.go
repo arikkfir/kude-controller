@@ -28,6 +28,7 @@ type GitRepositoryStatus struct {
 	// Directory where the Git repository is cloned
 	WorkDirectory string `json:"workDirectory,omitempty"`
 
+	// Conditions represent the latest available observations of the resource
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
@@ -39,6 +40,7 @@ type GitRepositoryStatus struct {
 //+kubebuilder:printcolumn:name="SHA",type="string",JSONPath=".status.lastPulledSHA"
 
 // GitRepository defines a single monitored Git repository
+//go:generate go run ../../scripts/objecter/objecter.go -type=GitRepository
 type GitRepository struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

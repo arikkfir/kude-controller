@@ -17,12 +17,16 @@ type HelmBundleSpec struct {
 // HelmBundleStatus defines the observed state of a HelmBundle.
 type HelmBundleStatus struct {
 	ChartStatus string `json:"chartStatus,omitempty"` // Status of the chart in the cluster
+
+	// Conditions represent the latest available observations of the resource
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
 // HelmBundle describes a bundle that installs a Helm chart into the cluster.
+//go:generate go run ../../scripts/objecter/objecter.go -type=HelmBundle
 type HelmBundle struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -1,5 +1,18 @@
 package v1alpha1
 
+import (
+	"github.com/arikkfir/kude-controller/internal/object"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func (in *CommandRun) GetStatus() object.Status {
+	return &in.Status
+}
+
+func (in *CommandRunStatus) GetConditions() *[]metav1.Condition {
+	return &in.Conditions
+}
+
 func (in *CommandRunList) Len() int {
 	return len(in.Items)
 }

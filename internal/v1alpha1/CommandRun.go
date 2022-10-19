@@ -29,6 +29,9 @@ type CommandRunStatus struct {
 
 	// Optional additional error message
 	Error string `json:"error,omitempty"`
+
+	// Conditions of the command run
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
@@ -40,6 +43,7 @@ type CommandRunStatus struct {
 //+kubebuilder:printcolumn:name="Error",type="string",JSONPath=".status.error"
 
 // CommandRun defines the complete definition of a command run.
+//go:generate go run ../../scripts/objecter/objecter.go -type=CommandRun
 type CommandRun struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -8,6 +8,7 @@ require (
 	github.com/onsi/gomega v1.20.1
 	github.com/stretchr/testify v1.8.0
 	go.uber.org/zap v1.22.0
+	golang.org/x/tools v0.1.12
 	k8s.io/api v0.24.4
 	k8s.io/apimachinery v0.24.4
 	k8s.io/client-go v0.24.4
@@ -74,6 +75,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220812174116-3211cb980234 // indirect
 	golang.org/x/oauth2 v0.0.0-20220808172628-8227340efae7 // indirect
 	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect

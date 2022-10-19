@@ -16,12 +16,16 @@ type KustomizeBundleSpec struct {
 // KustomizeBundleStatus defines the observed state of a KustomizeBundle.
 type KustomizeBundleStatus struct {
 	Errors []string `json:"errors,omitempty"` // List of errors encountered while applying the files
+
+	// Conditions represent the latest available observations of the resource
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
 // KustomizeBundle defines a set of Kubernetes manifest YAML files to be applied in the cluster.
+//go:generate go run ../../scripts/objecter/objecter.go -type=KustomizeBundle
 type KustomizeBundle struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

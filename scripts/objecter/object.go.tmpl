@@ -1,0 +1,31 @@
+package {{.PackageName}}
+
+import (
+	"github.com/arikkfir/kude-controller/internal/object"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func (in *{{.StructName}}) GetStatus() object.Status {
+    return &in.Status
+}
+
+func (in *{{.StructName}}Status) GetConditions() *[]metav1.Condition {
+	return &in.Conditions
+}
+
+func (in *{{.StructName}}List) Len() int {
+	return len(in.Items)
+}
+
+func (in *{{.StructName}}List) Less(i, j int) bool {
+	ii := in.Items[i]
+	sj := in.Items[j]
+	return ii.CreationTimestamp.Before(&sj.CreationTimestamp)
+}
+
+func (in *{{.StructName}}List) Swap(i, j int) {
+	ii := in.Items[i]
+	sj := in.Items[j]
+	in.Items[i] = sj
+	in.Items[j] = ii
+}
