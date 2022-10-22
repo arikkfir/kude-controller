@@ -8,12 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/strings/slices"
 	"os"
 	"os/exec"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"strings"
 	"testing"
 	"time"
 )
@@ -32,7 +30,7 @@ func TestIgnoreMissingResource(t *testing.T) {
 	reconciler := &GitRepositoryReconciler{}
 	_, _ = setupTestEnv(t, reconciler)
 
-	time.Sleep(5 * time.Second) // Give manager and cache time to start
+	time.Sleep(5 * time.Second) // Give manager and cache time to start; needed since we're directly invoking controller
 	res, err := reconciler.Reconcile(context.Background(), ctrl.Request{
 		NamespacedName: types.NamespacedName{
 			Namespace: "ns1",
@@ -55,32 +53,31 @@ func TestGitRepositoryResourceInitialization(t *testing.T) {
 			Name:      "repo1",
 			Namespace: "default",
 		},
-		Spec: v1alpha1.GitRepositorySpec{},
+		Spec: v1alpha1.GitRepositorySpec{
+			PollingInterval: "10s",
+		},
 	}
 	lookupKey := types.NamespacedName{Name: repo.Name, Namespace: repo.Namespace}
 
 	ctx := context.Background()
-	assert.NoErrorf(t, k8sClient.Create(ctx, repo), "resource creation failed")
-	assert.Eventuallyf(t, func() bool {
+	require.NoErrorf(t, k8sClient.Create(ctx, repo), "resource creation failed")
+	assert.EventuallyWithTf(t, func(c *assert.CollectT) {
 		var r v1alpha1.GitRepository
-		return assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") &&
-			meta.IsStatusConditionFalse(r.Status.Conditions, typeAvailableGitRepository)
-	}, 30*time.Second, time.Second, "expected condition '%s' to become False", typeAvailableGitRepository)
-	assert.Eventuallyf(t, func() bool {
-		var r v1alpha1.GitRepository
-		return assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") &&
-			meta.IsStatusConditionPresentAndEqual(r.Status.Conditions, typeClonedGitRepository, metav1.ConditionUnknown)
-	}, 30*time.Second, time.Second, "expected condition '%s' to become Unknown", typeClonedGitRepository)
-	assert.Eventuallyf(t, func() bool {
-		var r v1alpha1.GitRepository
-		return assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") &&
-			slices.Contains(r.Finalizers, finalizerGitRepository)
-	}, 30*time.Second, time.Second, "expected finalizer '%s' to be added", finalizerGitRepository)
-	assert.Eventuallyf(t, func() bool {
-		var r v1alpha1.GitRepository
-		return assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") &&
-			strings.HasPrefix(r.Status.WorkDirectory, "/tmp/")
-	}, 30*time.Second, time.Second, "expected work directory to have '/tmp' prefix")
+		if assert.NoErrorf(c, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") {
+			assert.Contains(c, r.Finalizers, finalizerGitRepository, "finalizer not found")
+			assert.Equal(c, string("/tmp/"+r.UID), r.Status.WorkDirectory, "work directory not set correctly")
+
+			cCloned := meta.FindStatusCondition(r.Status.Conditions, typeClonedGitRepository)
+			assert.Equal(c, metav1.ConditionFalse, cCloned.Status, "incorrect status")
+			assert.Equal(c, "NotCloned", cCloned.Reason, "incorrect reason")
+			assert.Equal(c, "", cCloned.Message, "incorrect message")
+
+			cAvailable := meta.FindStatusCondition(r.Status.Conditions, typeAvailableGitRepository)
+			assert.Equal(c, metav1.ConditionFalse, cAvailable.Status, "incorrect status")
+			assert.Equal(c, "NotCloned", cAvailable.Reason, "incorrect reason")
+			assert.Equal(c, "", cAvailable.Message, "incorrect message")
+		}
+	}, 5*time.Second, 1*time.Second, "resource not initialized correctly")
 }
 
 func TestGitRepositoryClone(t *testing.T) {
@@ -113,27 +110,20 @@ func TestGitRepositoryClone(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoErrorf(t, k8sClient.Create(ctx, repo), "resource creation failed")
-	timeout := 10 * time.Second
-	assert.Eventuallyf(t, func() bool {
+	assert.EventuallyWithTf(t, func(c *assert.CollectT) {
 		var r v1alpha1.GitRepository
-		return assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") &&
-			meta.IsStatusConditionTrue(r.Status.Conditions, typeAvailableGitRepository)
-	}, timeout, time.Second, "expected condition '%s' to become True", typeAvailableGitRepository)
-	assert.Eventuallyf(t, func() bool {
-		var r v1alpha1.GitRepository
-		return assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") &&
-			meta.IsStatusConditionTrue(r.Status.Conditions, typeClonedGitRepository)
-	}, timeout, time.Second, "expected condition '%s' to become True", typeClonedGitRepository)
-	assert.Eventuallyf(t, func() bool {
-		var r v1alpha1.GitRepository
-		return assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") &&
-			slices.Contains(r.Finalizers, finalizerGitRepository)
-	}, timeout, time.Second, "expected finalizer '%s' to be added", finalizerGitRepository)
-	assert.Eventuallyf(t, func() bool {
-		var r v1alpha1.GitRepository
-		return assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") &&
-			strings.HasPrefix(r.Status.WorkDirectory, "/tmp/")
-	}, timeout, time.Second, "expected work directory to have '/tmp' prefix")
+		if assert.NoErrorf(c, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") {
+			cCloned := meta.FindStatusCondition(r.Status.Conditions, typeClonedGitRepository)
+			assert.Equal(c, metav1.ConditionTrue, cCloned.Status, "incorrect status")
+			assert.Equal(c, "Cloned", cCloned.Reason, "incorrect reason")
+			assert.Equal(c, "", cCloned.Message, "incorrect message")
+
+			cAvailable := meta.FindStatusCondition(r.Status.Conditions, typeAvailableGitRepository)
+			assert.Equal(c, metav1.ConditionTrue, cAvailable.Status, "incorrect status")
+			assert.Equal(c, "Ready", cAvailable.Reason, "incorrect reason")
+			assert.Equal(c, "", cAvailable.Message, "incorrect message")
+		}
+	}, 5*time.Second, 1*time.Second, "resource not cloned correctly")
 
 	// TODO: verify clone dir
 }

@@ -2,6 +2,8 @@ module github.com/arikkfir/kude-controller
 
 go 1.18
 
+replace github.com/stretchr/testify v1.8.0 => github.com/arikkfir/testify v0.0.0-20221021150028-0c7cc6b1f499
+
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-git/go-git/v5 v5.4.2
