@@ -2,7 +2,7 @@
 
 ### Obtain kubectl
 FROM curlimages/curl:7.85.0 as kubectl
-RUN curl -L -o /tmp/kubectl https://dl.k8s.io/release/v1.25.0/bin/linux/amd64/kubectl && chmod +x /tmp/kubectl
+RUN curl -L -o /tmp/kubectl https://dl.k8s.io/release/v1.25.2/bin/linux/amd64/kubectl && chmod +x /tmp/kubectl
 
 ### Build executable
 FROM golang:1.18 as builder
