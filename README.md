@@ -39,7 +39,6 @@ $ controller-gen rbac:roleName=kude-controller crd webhook paths="./..."
 
 ### ROADMAP
 
-- [ ] Upgrade to Gingo v2
 - [ ] Implement Helm bundle
 - [ ] Implement Kude bundle
 - [ ] Implement Kustomize bundle
