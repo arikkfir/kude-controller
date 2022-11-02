@@ -2,6 +2,10 @@ name: Build Docker images
 
 on:
   workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
 
 defaults:
   run:
@@ -42,6 +46,7 @@ jobs:
             type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
       - uses: docker/build-push-action@v3
         with:
+          build-args: VERSION=${{ inputs.version }}
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
