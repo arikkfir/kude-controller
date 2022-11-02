@@ -2,8 +2,11 @@ name: Build branch
 run-name: Build ${{ github.ref }}
 
 on:
-  push:
-    branches: ['*']
+  pull_request:
+    types:
+      - synchronize
+      - opened
+      - reopened
 
 defaults:
   run:
