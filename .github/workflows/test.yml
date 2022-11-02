@@ -13,8 +13,7 @@ defaults:
 
 jobs:
 
-  test:
-    name: Test
+  go-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

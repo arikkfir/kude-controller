@@ -15,13 +15,13 @@ jobs:
     name: Test
     uses: ./.github/workflows/test.yml
     with:
-      version: 0.0.0-dev+${GITHUB_SHA::7}
+      version: 0.0.0-dev+${{ github.sha }}
     secrets: inherit
 
-  build-docker:
+  docker:
     name: Build Docker images
     needs: test
-    uses: ./.github/workflows/build-docker.yml
+    uses: ./.github/workflows/docker.yml
     with:
-      version: 0.0.0-dev+${GITHUB_SHA::7}
+      version: 0.0.0-dev+${{ github.sha }}
     secrets: inherit
