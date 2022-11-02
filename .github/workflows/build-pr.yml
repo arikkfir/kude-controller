@@ -1,5 +1,5 @@
 name: Build PR
-run-name: Build PR of ${{ github.ref_name }}
+run-name: Build PR#${{ github.ref_name }}
 
 on:
   pull_request:
