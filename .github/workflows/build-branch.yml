@@ -22,4 +22,6 @@ jobs:
     name: Build Docker images
     needs: test
     uses: ./.github/workflows/build-docker.yml
+    with:
+      version: 0.0.0-dev+${GITHUB_SHA::7}
     secrets: inherit
