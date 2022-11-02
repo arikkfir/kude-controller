@@ -1,0 +1,22 @@
+name: Build branch
+run-name: Build ${{ github.ref }} by @${{ github.actor }}
+
+on:
+  push:
+    branches: ['*']
+
+defaults:
+  run:
+    shell: bash -eu {0}
+
+jobs:
+
+  test:
+    name: Test
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: arduino/setup-task@v1
+      - run: task test
+      - uses: codecov/codecov-action@v3
+        if: always()

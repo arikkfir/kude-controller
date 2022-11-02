@@ -2,15 +2,11 @@ package internal
 
 import "github.com/blang/semver"
 
-var gitCommit = "unknown"
-var gitTag = "0.0.0-dev"
+var versionString = "0.0.0-dev+unknown"
 var version semver.Version
 
 func init() {
-	if gitTag[0] == 'v' {
-		gitTag = gitTag[1:]
-	}
-	version = semver.MustParse(gitTag + "+" + gitCommit)
+	version = semver.MustParse(versionString)
 }
 
 // GetVersion returns the kude version currently running.

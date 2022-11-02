@@ -73,7 +73,7 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	testEnv = &envtest.Environment{
 		AttachControlPlaneOutput: false,
 		BinaryAssetsDirectory:    binaryAssetsDir,
-		CRDDirectoryPaths:        []string{filepath.Join(workDir, "config", "crd")},
+		CRDDirectoryPaths:        []string{filepath.Join(workDir, "chart", "crds")},
 		ErrorIfCRDPathMissing:    true,
 	}
 

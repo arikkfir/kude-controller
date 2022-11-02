@@ -12,10 +12,7 @@ RUN --mount=type=cache,target=/go/pkg go mod download
 COPY cmd ./cmd
 COPY internal ./internal
 ENV CGO_ENABLED="0"
-ENV GOARCH="amd64"
-ENV GOOS="linux"
 ENV GO111MODULE="on"
-ARG SKAFFOLD_GO_GCFLAGS
 RUN --mount=type=cache,target=/go/pkg go build -o controller ./cmd/main.go
 
 ### Target layer

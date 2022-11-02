@@ -3,22 +3,22 @@
   <component name="KubernetesSettings">
     <specSources>
       <SpecSource>
-        <option name="pathOrUrl" value="$PROJECT_DIR$/config/crd/kude.kfirs.com_commandruns.yaml" />
+        <option name="pathOrUrl" value="$PROJECT_DIR$/chart/crds/kude.kfirs.com_commandruns.yaml" />
       </SpecSource>
       <SpecSource>
-        <option name="pathOrUrl" value="$PROJECT_DIR$/config/crd/kude.kfirs.com_gitrepositories.yaml" />
+        <option name="pathOrUrl" value="$PROJECT_DIR$/chart/crds/kude.kfirs.com_gitrepositories.yaml" />
       </SpecSource>
       <SpecSource>
-        <option name="pathOrUrl" value="$PROJECT_DIR$/config/crd/kude.kfirs.com_helmbundles.yaml" />
+        <option name="pathOrUrl" value="$PROJECT_DIR$/chart/crds/kude.kfirs.com_helmbundles.yaml" />
       </SpecSource>
       <SpecSource>
-        <option name="pathOrUrl" value="$PROJECT_DIR$/config/crd/kude.kfirs.com_kubectlbundles.yaml" />
+        <option name="pathOrUrl" value="$PROJECT_DIR$/chart/crds/kude.kfirs.com_kubectlbundles.yaml" />
       </SpecSource>
       <SpecSource>
-        <option name="pathOrUrl" value="$PROJECT_DIR$/config/crd/kude.kfirs.com_kudebundles.yaml" />
+        <option name="pathOrUrl" value="$PROJECT_DIR$/chart/crds/kude.kfirs.com_kudebundles.yaml" />
       </SpecSource>
       <SpecSource>
-        <option name="pathOrUrl" value="$PROJECT_DIR$/config/crd/kude.kfirs.com_kustomizebundles.yaml" />
+        <option name="pathOrUrl" value="$PROJECT_DIR$/chart/crds/kude.kfirs.com_kustomizebundles.yaml" />
       </SpecSource>
     </specSources>
   </component>
