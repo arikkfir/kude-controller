@@ -1,5 +1,5 @@
 name: Build branch
-run-name: Build ${{ github.ref }}
+run-name: Build branch ${{ github.ref_name }}
 
 on:
   push:
