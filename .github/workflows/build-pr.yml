@@ -19,15 +19,59 @@ jobs:
 
   test:
     name: Test
-    uses: ./.github/workflows/test.yml
-    with:
-      version: 0.0.0-dev+${{ github.sha }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          cache: true
+          check-latest: true
+          go-version-file: go.mod
+      - run: go mod download
+      - run: go vet ./...
+      - run: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+      - run: setup-envtest use 1.25.0 --bin-dir=./bin
+      - run: |
+          go test \
+            -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=0.0.0-dev+${GITHUB_SHA::7}.pr${{ github.event.number }}'" \
+            -v \
+            -vet=off \
+            -race \
+            -shuffle ${{ github.run_number }} \
+            -coverprofile=coverage.txt -covermode=atomic \
+            ./...
+      - uses: codecov/codecov-action@v3
+        if: always()
 
-#  docker:
-#    name: Docker
-#    needs: test
-#    uses: ./.github/workflows/docker.yml
-#    with:
-#      version: 0.0.0-dev+${{ github.sha }}
-#    secrets: inherit
+  docker:
+    name: Docker
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+      - uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: buildx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            buildx-${{ runner.os }}-
+            buildx-
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          docker build --build-arg 'VERSION=0.0.0-dev+${GITHUB_SHA::7}.pr${{ github.event.number }}' \
+                       --cache-from=type=local,src=/tmp/.buildx-cache \
+                       --cache-to=type=local,mode=max,dest=/tmp/.buildx-cache-new \
+                       --file Dockerfile \
+                       --push \
+                       --tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} \
+                       --tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA::7} \
+                       --tag ghcr.io/arikkfir/kude-controller:pr${{ github.event.number }} \
+                       .
+          rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache

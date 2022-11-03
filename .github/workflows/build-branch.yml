@@ -9,9 +9,6 @@ defaults:
   run:
     shell: bash -eu {0}
 
-env:
-  VERSION: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
-
 jobs:
 
   test:
@@ -30,7 +27,7 @@ jobs:
       - run: setup-envtest use 1.25.0 --bin-dir=./bin
       - run: |
           go test \
-            -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=${VERSION}'" \
+            -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=0.0.0-dev+${GITHUB_SHA::7}'" \
             -v \
             -vet=off \
             -race \
@@ -62,7 +59,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - run: |
-          docker build --build-arg 'VERSION=${VERSION}' \
+          docker build --build-arg 'VERSION=0.0.0-dev+${GITHUB_SHA::7}' \
                        --cache-from=type=local,src=/tmp/.buildx-cache \
                        --cache-to=type=local,mode=max,dest=/tmp/.buildx-cache-new \
                        --file Dockerfile \
