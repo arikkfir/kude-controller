@@ -9,22 +9,40 @@ defaults:
   run:
     shell: bash -eu {0}
 
+env:
+  VERSION: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
+
 jobs:
 
   test:
     name: Test
-    uses: ./.github/workflows/test.yml
-    with:
-      version: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          cache: true
+          check-latest: true
+          go-version-file: go.mod
+      - run: go mod download
+      - run: go vet ./...
+      - run: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+      - run: setup-envtest use 1.25.0 --bin-dir=./bin
+      - run: |
+          go test \
+            -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=${VERSION}'" \
+            -v \
+            -vet=off \
+            -race \
+            -shuffle ${{ github.run_number }} \
+            -coverprofile=coverage.txt -covermode=atomic \
+            ./...
+      - uses: codecov/codecov-action@v3
+        if: always()
 
   docker:
-#    name: Docker
+    name: Docker
     needs: test
-#    uses: ./.github/workflows/docker.yml
-#    with:
-#      version: ${{ env.VERSION }}
-#    secrets: inherit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -53,6 +71,4 @@ jobs:
                        --tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA::7} \
                        --tag ghcr.io/arikkfir/kude-controller:${{ github.ref_name }} \
                        .
-        env:
-          VERSION: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
-      - run: rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache
