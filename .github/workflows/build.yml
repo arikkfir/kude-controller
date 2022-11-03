@@ -1,0 +1,72 @@
+name: Build branches
+run-name: Build ${{ github.ref_name }}
+
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    types:
+      - synchronize
+      - opened
+      - reopened
+
+defaults:
+  run:
+    shell: bash -eu {0}
+
+jobs:
+
+  build:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: paulhatch/semantic-version@v4.0.2
+        with:
+          tag_prefix: v
+          major_pattern: "/\\(MAJOR|BREAKING\\)/"
+          major_regexp_flags: g
+          minor_pattern: "/\\(MINOR|FEATURE\\)/"
+          minor_regexp_flags: g
+          format: "${major}.${minor}.${patch}"
+          search_commit_body: true
+          user_format_type: csv # The output method used to generate list of users, 'csv' or 'json'.
+      - uses: actions/setup-go@v3
+        with:
+          cache: true
+          check-latest: true
+          go-version-file: go.mod
+      - uses: arduino/setup-task@v1
+      # TODO: cache setup-envtest
+      - run: task test # TODO: inject semver version in test binary
+      - uses: codecov/codecov-action@v3
+        if: always()
+      - uses: docker/setup-buildx-action@v2
+        with:
+          install: true
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: ghcr.io/arikkfir/kude-controller
+          tags: |
+            type=sha
+            type=sha,format=long
+            type=ref,event=branch
+            type=ref,event=pr
+            type=edge,branch=${{ github.event.repository.default_branch }}
+          # TODO: add semver version as tag (not sure)
+      - uses: docker/build-push-action@v3
+        with:
+          build-args: VERSION=0.0.0-dev+${GITHUB_SHA::7} # TODO: inject semver version into build
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+          tags: ${{ steps.docker-meta.outputs.tags }}
