@@ -117,9 +117,13 @@ func (r *GitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Get interval
-	interval, err := time.ParseDuration(o.Spec.PollingInterval)
+	pollingInterval := o.Spec.PollingInterval
+	if pollingInterval == "" {
+		pollingInterval = "30s"
+	}
+	interval, err := time.ParseDuration(pollingInterval)
 	if err != nil {
-		if _, err := r.setCondition(ctx, &o, typeAvailableGitRepository, metav1.ConditionFalse, "InvalidPollingInterval", "Invalid polling interval: "+o.Spec.PollingInterval); err != nil {
+		if _, err := r.setCondition(ctx, &o, typeAvailableGitRepository, metav1.ConditionFalse, "InvalidPollingInterval", "Invalid polling interval: "+pollingInterval); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: false}, nil

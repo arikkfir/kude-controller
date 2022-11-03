@@ -2,14 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller
-  namespace: kude
+  namespace: {{.Release.Namespace}}
   labels:
-    app.kubernetes.io/name: kude
+#    app.kubernetes.io/name: kude
     app.kubernetes.io/component: controller
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: kude
+#      app.kubernetes.io/name: kude
       app.kubernetes.io/component: controller
   replicas: 1
   strategy:
@@ -21,7 +21,7 @@ spec:
         app.kubernetes.io/component: controller
     spec:
       containers:
-        - image: controller
+        - image: "ghcr.io/arikkfir/kude-controller:{{.Chart.AppVersion | replace "+" "_"}}"
           args:
             - --zap-log-level=3
           name: controller

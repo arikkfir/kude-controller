@@ -6,6 +6,12 @@
 [![GoReportCard](https://goreportcard.com/badge/github.com/arikkfir/kude-controller)](https://goreportcard.com/report/github.com/arikkfir/kude-controller)
 [![codecov](https://codecov.io/gh/arikkfir/kude-controller/branch/main/graph/badge.svg?token=QP3OAILB25)](https://codecov.io/gh/arikkfir/kude-controller)
 
+## Installing
+
+```bash
+$ helm repo add arikkfir https://arikkfir.github.io/charts
+```
+
 ## Development
 
 ### Setup
@@ -39,7 +45,6 @@ $ controller-gen rbac:roleName=kude-controller crd webhook paths="./..."
 
 ### ROADMAP
 
-- [ ] Upgrade to Gingo v2
 - [ ] Implement Helm bundle
 - [ ] Implement Kude bundle
 - [ ] Implement Kustomize bundle

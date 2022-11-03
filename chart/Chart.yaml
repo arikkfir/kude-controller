@@ -1,0 +1,14 @@
+apiVersion: v2
+kubeVersion: ">= 1.25.0"
+type: application
+name: kude-controller
+version: "0.0.1"
+appVersion: "local"
+description: Kude Controller is the Kude daemon running in the cluster, ensuring that the cluster is in the desired state.
+home: https://github.com/arikkfir/kude-controller
+sources:
+  - https://github.com/arikkfir/kude-controller
+maintainers:
+  - name: Arik Kfir
+    email: arik@kfirs.com
+    url: https://github.com/arikkfir

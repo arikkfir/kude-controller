@@ -14,7 +14,6 @@ type GitRepositorySpec struct {
 	// Branch of the Git repository to monitor (TODO: rename to "Ref"; let user specify "refs/heads/...", "refs/tags/..." or SHA)
 	Branch string `json:"branch"`
 
-	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// Polling interval for the Git repository
 	PollingInterval string `json:"pollingInterval"`

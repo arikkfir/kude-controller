@@ -1,0 +1,5 @@
+Next steps:
+1. Create "GitRepository" objects to connect to your GitOps repositories.
+2. Create bundle objects (e.g. "KubectlBundle" or "HelmBundle") to define the desired state of your cluster.
+
+For details, see https://github.com/arikkfir/kude-controller

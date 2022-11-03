@@ -1,0 +1,20 @@
+apiVersion: kude.kfirs.com/v1alpha1
+kind: GitRepository
+metadata:
+  name: kude-controller-main
+  namespace: kude
+spec:
+  url: https://github.com/arikkfir/kude-controller.git
+  branch: refs/heads/main
+  pollingInterval: 30s
+---
+apiVersion: kude.kfirs.com/v1alpha1
+kind: KubectlBundle
+metadata:
+  name: kubectl-bundle
+  namespace: kude
+spec:
+  sourceRepository: kude/kude-controller-main
+  driftDetectionInterval: 30s
+  files:
+    - test/bundles/kubectl/*.yaml
