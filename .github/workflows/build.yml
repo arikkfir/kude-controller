@@ -31,8 +31,8 @@ jobs:
           token: ${{ github.token }}
           branch: ${{ github.ref_name }}
           majorList: breaking, major
-          minorList: feat, feature
-          patchList: fix, bugfix, perf, refactor, test, tests
+          minorList: FEAT, feat, FEATURE, feature
+          patchList: FIX, fix, BUGFIX, bugfix, PERF, perf, REFACTOR, refactor, TEST, test, TESTS, tests
       - uses: actions/setup-go@v3
         with:
           cache: true
