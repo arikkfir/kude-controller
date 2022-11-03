@@ -45,11 +45,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - run: |
           docker build --build-arg 'VERSION=${VERSION}' \
-                       --cache-from type=local,src=/tmp/.buildx-cache \
-                       --cache-to type=local,mode=max,dest=/tmp/.buildx-cache-new \
+                       --cache-from=type=local,src=/tmp/.buildx-cache \
+                       --cache-to=type=local,mode=max,dest=/tmp/.buildx-cache-new \
                        --file Dockerfile \
                        --push \
-                       -tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} \
+                       --tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} \
                        .
         env:
           VERSION: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
