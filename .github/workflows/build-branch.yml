@@ -23,7 +23,7 @@ jobs:
           go-version-file: go.mod
       - uses: arduino/setup-task@v1
       # TODO: cache setup-envtest
-#      - run: task --verbose test
+      - run: task --verbose test
 #      - run: go mod download
 #      - run: go vet ./...
 #      - run: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest

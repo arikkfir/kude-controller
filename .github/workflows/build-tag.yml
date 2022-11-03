@@ -21,19 +21,22 @@ jobs:
           cache: true
           check-latest: true
           go-version-file: go.mod
-      - run: go mod download
-      - run: go vet ./...
-      - run: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-      - run: setup-envtest use 1.25.0 --bin-dir=./bin
-      - run: |
-          go test \
-            -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=${{ github.ref_name }}+${GITHUB_SHA::7}'" \
-            -v \
-            -vet=off \
-            -race \
-            -shuffle ${{ github.run_number }} \
-            -coverprofile=coverage.txt -covermode=atomic \
-            ./...
+      - uses: arduino/setup-task@v1
+      # TODO: cache setup-envtest
+      - run: task --verbose test
+#      - run: go mod download
+#      - run: go vet ./...
+#      - run: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+#      - run: setup-envtest use 1.25.0 --bin-dir=./bin
+#      - run: |
+#          go test \
+#            -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=${{ github.ref_name }}+${GITHUB_SHA::7}'" \
+#            -v \
+#            -vet=off \
+#            -race \
+#            -shuffle ${{ github.run_number }} \
+#            -coverprofile=coverage.txt -covermode=atomic \
+#            ./...
       - uses: codecov/codecov-action@v3
         if: always()
 
