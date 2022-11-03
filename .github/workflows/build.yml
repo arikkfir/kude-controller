@@ -17,7 +17,7 @@ defaults:
 jobs:
 
   build:
-    name: Test
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -27,9 +27,7 @@ jobs:
         with:
           tag_prefix: v
           major_pattern: "/\\(MAJOR|BREAKING\\)/"
-          major_regexp_flags: g
           minor_pattern: "/\\(MINOR|FEATURE\\)/"
-          minor_regexp_flags: g
           format: "${major}.${minor}.${patch}"
           search_commit_body: true
           user_format_type: csv # The output method used to generate list of users, 'csv' or 'json'.
