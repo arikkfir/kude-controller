@@ -1,12 +1,9 @@
-name: Build PR
-run-name: Build PR#${{ github.ref_name }}
+name: Build tag
+run-name: Build tag ${{ github.ref_name }}
 
 on:
-  pull_request:
-    types:
-      - synchronize
-      - opened
-      - reopened
+  push:
+    tags: ['*']
 
 defaults:
   run:
@@ -30,7 +27,7 @@ jobs:
       - run: setup-envtest use 1.25.0 --bin-dir=./bin
       - run: |
           go test \
-            -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=0.0.0-dev+${GITHUB_SHA::7}.pr${{ github.event.number }}'" \
+            -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=${{ github.ref_name }}+${GITHUB_SHA::7}'" \
             -v \
             -vet=off \
             -race \
@@ -62,13 +59,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - run: |
-          docker build --build-arg 'VERSION=0.0.0-dev+${GITHUB_SHA::7}.pr${{ github.event.number }}' \
+          docker build --build-arg 'VERSION=${{ github.ref_name }}+${GITHUB_SHA::7}' \
                        --cache-from=type=local,src=/tmp/.buildx-cache \
                        --cache-to=type=local,mode=max,dest=/tmp/.buildx-cache-new \
                        --file Dockerfile \
                        --push \
                        --tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} \
                        --tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA::7} \
-                       --tag ghcr.io/arikkfir/kude-controller:pr${{ github.event.number }} \
+                       --tag ghcr.io/arikkfir/kude-controller:${{ github.ref_name }} \
                        .
           rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache
