@@ -9,16 +9,13 @@ defaults:
   run:
     shell: bash -eu {0}
 
-env:
-  VERSION: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
-
 jobs:
 
   test:
     name: Test
     uses: ./.github/workflows/test.yml
     with:
-      version: ${{ env.VERSION }}
+      version: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
     secrets: inherit
 
   docker:
@@ -54,6 +51,8 @@ jobs:
                        --push \
                        -tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} \
                        .
+        env:
+          VERSION: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
       - run: |
           docker tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} ghcr.io/arikkfir/kude-controller:${GITHUB_SHA::7}
           docker push ghcr.io/arikkfir/kude-controller:${GITHUB_SHA::7}
