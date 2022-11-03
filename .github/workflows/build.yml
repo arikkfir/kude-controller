@@ -24,6 +24,15 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Get Next Version
+        id: semver
+        uses: ietf-tools/semver-action@v1
+        with:
+          token: ${{ github.token }}
+          branch: ${{ github.ref_name }}
+          majorList: breaking, major
+          minorList: feat, feature
+          patchList: fix, bugfix, perf, refactor, test, tests
       - uses: actions/setup-go@v3
         with:
           cache: true
