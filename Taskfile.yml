@@ -27,37 +27,20 @@ vars:
 
 tasks:
 
-  go_mod_download:
+  download-go-deps:
     desc: Download Go source code dependencies.
-    internal: true
-    preconditions:
-      - sh: which go > /dev/null
-        msg: "Go is not installed"
-    sources:
-      - go.mod
-      - go.sum
-    cmds:
-      - go mod download
+    sources: [ go.mod, go.sum ]
+    cmds: [ go mod download ]
 
   controller-gen:
     desc: Install controller-gen tool.
-    internal: true
-    preconditions:
-      - sh: which go > /dev/null
-        msg: "Go is not installed"
-    generates:
-      - '{{.GOPATH}}/bin/controller-gen'
-    status:
-      - test -f {{.GOPATH}}/bin/controller-gen
-    cmds:
-      - go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+    generates: [ '{{.GOPATH}}/bin/controller-gen' ]
+    status: [ 'test -f {{.GOPATH}}/bin/controller-gen' ]
+    cmds: [ go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2 ]
 
   codegen:
     desc: Generate Kubernetes CRDs and Go code.
-    deps: [ controller-gen, go_mod_download ]
-    preconditions:
-      - sh: which go > /dev/null
-        msg: "Go is not installed"
+    deps: [ controller-gen, download-go-deps ]
     sources:
       - doc.go
       - go.*
@@ -73,15 +56,8 @@ tasks:
 
   setup-envtest:
     desc: Install envtest tool.
-    internal: true
-    preconditions:
-      - sh: which go > /dev/null
-        msg: "Go is not installed"
-    vars:
-      K8S_VERSION: "1.25.0"
-    generates:
-      - '{{.GOPATH}}/bin/setup-envtest'
-      - ./bin/k8s/{{.K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/**
+    vars: { K8S_VERSION: "1.25.0" }
+    generates: [ '{{.GOPATH}}/bin/setup-envtest', './bin/k8s/{{.K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/**' ]
     status:
       - test -f {{.GOPATH}}/bin/setup-envtest
       - test -f ./bin/k8s/{{.K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/etcd
@@ -93,10 +69,7 @@ tasks:
 
   test:
     desc: Verify Go code & and run all unit & integration tests.
-    deps: [ setup-envtest, go_mod_download ]
-    preconditions:
-      - sh: which go > /dev/null
-        msg: "Go is not installed"
+    deps: [ setup-envtest, download-go-deps ]
     sources:
       - doc.go
       - go.*
@@ -107,7 +80,7 @@ tasks:
     cmds:
       - go vet ./...
       - go test
-        -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString={{.VERSION_AND_BUILD}}'"
+        -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=0.0.0-dev'"
         -v
         -vet=off
         -race
@@ -117,9 +90,6 @@ tasks:
 
   build-docker-images:
     desc: Build Docker images.
-    preconditions:
-      - sh: which docker > /dev/null
-        msg: Docker is not installed.
     sources:
       - cmd/**/*
       - internal/**/*
@@ -141,26 +111,8 @@ tasks:
         docker tag ghcr.io/arikkfir/kude-controller:{{.GITHUB_SHA}} ghcr.io/arikkfir/kude-controller:{{.VERSION_AND_BUILD | replace "+" "_"}}
         [[ -z "{{.GITHUB_BRANCH}}" ]] || docker tag ghcr.io/arikkfir/kude-controller:{{.GITHUB_SHA}} ghcr.io/arikkfir/kude-controller:{{.GITHUB_BRANCH}}
 
-  push-docker-images:
-    desc: Push Docker images.
-    deps: [ build-docker-images ]
-    preconditions:
-      - sh: which docker > /dev/null
-        msg: Docker is not installed.
-      - sh: '[[ "{{.VERSION}}" != "0.0.0-dev" ]]'
-        msg: Push is prohibited for local dev versions.
-    # TODO: avoid rerunning "push-docker-images" by adding "status" field that checks if images are present remotely
-    cmds:
-      - docker push ghcr.io/arikkfir/kude-controller:{{.GITHUB_SHA}}
-      - docker push ghcr.io/arikkfir/kude-controller:{{.VERSION | replace "+" "_"}}
-      - docker push ghcr.io/arikkfir/kude-controller:{{.VERSION_AND_BUILD | replace "+" "_"}}
-      - '[[ -z "{{.GITHUB_BRANCH}}" ]] || docker push ghcr.io/arikkfir/kude-controller:{{.GITHUB_BRANCH}}'
-
   package-helm-chart:
     desc: Package Helm chart.
-    preconditions:
-      - sh: which helm > /dev/null
-        msg: Helm is not installed.
     sources:
       - chart/**/*
     generates:
@@ -168,30 +120,12 @@ tasks:
     cmds:
       - helm package ./chart --app-version={{.VERSION_AND_BUILD}} --destination=. --version={{.VERSION_AND_BUILD}}
 
-  push-helm-chart:
-    desc: Push Helm chart to GitHub Packages OCI registry.
-    deps: [ package-helm-chart ]
-    preconditions:
-      - sh: which helm > /dev/null
-        msg: Helm is not installed.
-      - sh: '[[ "{{.VERSION}}" != "0.0.0-dev" ]]'
-        msg: Push is prohibited for local dev versions.
-    sources:
-      - kude-controller-{{.VERSION_AND_BUILD}}.tgz
-    status:
-      - helm show all oci://ghcr.io/arikkfir/kude-controller --version='{{.VERSION_AND_BUILD}}' | grep -E '^Pulled:' | grep -v dirty | grep .
-    cmds:
-      - helm push kude-controller-{{.VERSION_AND_BUILD}}.tgz oci://ghcr.io/arikkfir
-
   deploy:
     desc: Deploy changes in a branch.
     deps: [ push-docker-images, push-helm-chart ]
 
   start-minikube:
     desc: Start a local Minikube Kubernetes cluster.
-    preconditions:
-      - sh: which minikube > /dev/null
-        msg: Minikube is not installed.
     status:
       - "minikube status -p kude-controller | grep -q 'host: Running'"
     vars:
@@ -208,9 +142,6 @@ tasks:
 
   delete-minikube:
     desc: Delete local Minikube Kubernetes cluster.
-    preconditions:
-      - sh: which minikube > /dev/null
-        msg: Minikube is not installed.
     status:
       - "minikube status -p kude-controller | grep -q 'Profile \"kude-controller\" not found.'"
     cmds:
@@ -218,11 +149,6 @@ tasks:
 
   install-in-minikube:
     desc: Install test resources into Minikube.
-    preconditions:
-      - sh: which helm > /dev/null
-        msg: Helm is not installed.
-      - sh: which kubectl > /dev/null
-        msg: Kubectl is not installed.
     cmds:
       - kubectl create -f ./test/rbac.yaml
       - kubectl create -f ./test/resources.yaml
@@ -231,9 +157,6 @@ tasks:
 
   uninstall-from-minikube:
     desc: Uninstall Kude Controller from Minikube.
-    preconditions:
-      - sh: which helm > /dev/null
-        msg: Helm is not installed.
     ignore_error: true
     cmds:
       - helm --kube-context=kude-controller -n kude uninstall kude-controller --wait
@@ -244,10 +167,7 @@ tasks:
 
   run:
     desc: Run a local Kubernetes cluster and deploy current code into it.
-    deps: [start-minikube, package-helm-chart]
-    preconditions:
-      - sh: which docker > /dev/null
-        msg: Docker is not installed.
+    deps: [ start-minikube, package-helm-chart ]
     sources:
       - chart/**/*
       - cmd/**/*
@@ -268,9 +188,6 @@ tasks:
 
   port-forward:
     desc: Port-forward Kude Controller to localhost.
-    deps: [start-minikube]
-    preconditions:
-      - sh: which kubectl > /dev/null
-        msg: Kubectl is not installed.
+    deps: [ start-minikube ]
     cmds:
       - kubectl --context=kude-controller -n kude port-forward deployment/controller 8080 8081
