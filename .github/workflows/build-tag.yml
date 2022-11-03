@@ -69,3 +69,12 @@ jobs:
                        --tag ghcr.io/arikkfir/kude-controller:${{ github.ref_name }} \
                        .
           rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  helm:
+    name: Helm
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: helm package ./chart --app-version=${{ github.ref_name }}+${GITHUB_SHA::7} --destination=. --version=${{ github.ref_name }}+${GITHUB_SHA::7}
+      - run: helm push kude-controller-${{ github.ref_name }}+${GITHUB_SHA::7}.tgz oci://ghcr.io/arikkfir
