@@ -38,6 +38,9 @@ jobs:
         with:
           images: ghcr.io/arikkfir/kude-controller
           tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=ref,event=branch
             type=ref,event=pr
             type=sha,prefix=,format=short

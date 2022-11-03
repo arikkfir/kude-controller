@@ -8,6 +8,9 @@ on:
       - opened
       - reopened
 
+env:
+  VERSION: 0.0.0-dev+${{ github.sha }}.${{ github.run_id }}.${{ github.run_number }}.${{ github.run_attempt }}
+
 defaults:
   run:
     shell: bash -eu {0}
@@ -21,10 +24,10 @@ jobs:
       version: 0.0.0-dev+${{ github.sha }}
     secrets: inherit
 
-  docker:
-    name: Docker
-    needs: test
-    uses: ./.github/workflows/docker.yml
-    with:
-      version: 0.0.0-dev+${{ github.sha }}
-    secrets: inherit
+#  docker:
+#    name: Docker
+#    needs: test
+#    uses: ./.github/workflows/docker.yml
+#    with:
+#      version: 0.0.0-dev+${{ github.sha }}
+#    secrets: inherit
