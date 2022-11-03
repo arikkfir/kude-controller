@@ -20,7 +20,7 @@ jobs:
 
   docker:
 #    name: Docker
-#    needs: test
+    needs: test
 #    uses: ./.github/workflows/docker.yml
 #    with:
 #      version: ${{ env.VERSION }}
@@ -50,13 +50,9 @@ jobs:
                        --file Dockerfile \
                        --push \
                        --tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} \
+                       --tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA::7} \
+                       --tag ghcr.io/arikkfir/kude-controller:${{ github.ref_name }} \
                        .
         env:
           VERSION: 0.0.0-dev+${{ github.sha }}.runID${{ github.run_id }}.runNum${{ github.run_number }}.attempt${{ github.run_attempt }}
-      - run: |
-          docker tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} ghcr.io/arikkfir/kude-controller:${GITHUB_SHA::7}
-          docker push ghcr.io/arikkfir/kude-controller:${GITHUB_SHA::7}
-      - run: |
-          docker tag ghcr.io/arikkfir/kude-controller:${GITHUB_SHA} ghcr.io/arikkfir/kude-controller:${{ github.ref_name }} .
-          docker push ghcr.io/arikkfir/kude-controller:${{ github.ref_name }}
       - run: rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache
