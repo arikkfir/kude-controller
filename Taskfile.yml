@@ -36,7 +36,9 @@ tasks:
     desc: Install controller-gen tool.
     generates: [ '{{.GOPATH}}/bin/controller-gen' ]
     status: [ 'test -f {{.GOPATH}}/bin/controller-gen' ]
-    cmds: [ go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2 ]
+    vars:
+        VVV: '{{.CONTROLLER_GEN_VERSION | default "0.9.2"}}'
+    cmds: [ 'go install sigs.k8s.io/controller-tools/cmd/controller-gen@v{{.VVV}}' ]
 
   codegen:
     desc: Generate Kubernetes CRDs and Go code.
