@@ -36,7 +36,7 @@ jobs:
         with:
           token: ${{ github.token }}
           branch: ${{ github.ref_name }}
-          majorList: breaking, major
+          majorList: BREAKING, breaking, MAJOR, major
           minorList: FEAT, feat, FEATURE, feature
           patchList: FIX, fix, BUGFIX, bugfix, PERF, perf, REFACTOR, refactor, TEST, test, TESTS, tests
 
