@@ -3,10 +3,6 @@ version: '3'
 output: prefixed
 
 vars:
-  GOARCH:
-    sh: go env GOARCH
-  GOOS:
-    sh: go env GOOS
   GOPATH:
     sh: go env GOPATH
   RESOLVED_K8S_VERSION: '{{.K8S_VERSION | default "1.25.0"}}'
@@ -45,6 +41,11 @@ tasks:
 
   setup-envtest:
     desc: Install envtest tool.
+    vars:
+      GOARCH:
+        sh: go env GOARCH
+      GOOS:
+        sh: go env GOOS
     generates: [ '{{.GOPATH}}/bin/setup-envtest', './bin/k8s/{{.RESOLVED_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/**' ]
     status:
       - test -f {{.GOPATH}}/bin/setup-envtest
