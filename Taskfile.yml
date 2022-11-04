@@ -82,13 +82,13 @@ tasks:
     cmds:
       - go vet ./...
       - go test
-        -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString=0.0.0-dev'"
-        -v
-        -vet=off
-        -race
-        -coverprofile=coverage.txt
-        -covermode=atomic
-        ./...
+          -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString={{._VERSION}}'"
+          -v
+          -vet=off
+          -race
+          -coverprofile=coverage.txt
+          -covermode=atomic
+          ./...
 
   build-docker-images:
     desc: Build Docker images.
