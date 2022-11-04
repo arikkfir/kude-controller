@@ -26,11 +26,13 @@ jobs:
       nextStrict: ${{ steps.semver.outputs.nextStrict }}
       nextMajor: ${{ steps.semver.outputs.nextMajor }}
       nextMajorStrict: ${{ steps.semver.outputs.nextMajorStrict }}
-      nextFull: ${{ steps.semver.outputs.nextStrict }}-pre+${{ github.sha }}
+      nextWithBuild: ${{ steps.semver.outputs.nextStrict }}-pre+${{ steps.shortsha.outputs.sha }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - uses: benjlevesque/short-sha@v2.1
+        id: shortsha
       - uses: ietf-tools/semver-action@v1
         id: semver
         with:
@@ -55,7 +57,7 @@ jobs:
       # TODO: cache setup-envtest
       - run: task test
         env:
-          VERSION: ${{ needs.version.outputs.nextFull }}
+          VERSION: ${{ needs.version.outputs.nextWithBuild }}
       - uses: codecov/codecov-action@v3
         if: always()
 
@@ -78,16 +80,15 @@ jobs:
         with:
           images: ghcr.io/arikkfir/kude-controller
           tags: |
-            type=sha
-            type=sha,format=long
+            type=sha,prefix=pre-
             type=ref,event=branch
             type=ref,event=pr
-            type=raw,value=${{ needs.version.outputs.nextFull }}
+            type=raw,value=${{ needs.version.outputs.nextWithBuild }}
       #      type=edge,branch=${{ github.ref_name }}
       #      type=edge,branch=${{ github.ref_name }},prefix=,suffix=
       - uses: docker/build-push-action@v3
         with:
-          build-args: VERSION=${{ needs.version.outputs.nextFull }}
+          build-args: VERSION=${{ needs.version.outputs.nextWithBuild }}
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
