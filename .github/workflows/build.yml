@@ -1,9 +1,9 @@
-name: Build branches
+name: Build branches & PRs
 run-name: Build ${{ github.ref_name }}
 
 on:
   push:
-    branches: ['*']
+    branches: [ '*' ]
 
   pull_request:
     types:
@@ -17,22 +17,35 @@ defaults:
 
 jobs:
 
-  build:
-    name: Build
+  version:
+    name: Version
     runs-on: ubuntu-latest
+    outputs:
+      current: ${{ steps.semver.outputs.current }}
+      next: ${{ steps.semver.outputs.next }}
+      nextStrict: ${{ steps.semver.outputs.nextStrict }}
+      nextMajor: ${{ steps.semver.outputs.nextMajor }}
+      nextMajorStrict: ${{ steps.semver.outputs.nextMajorStrict }}
+      nextFull: ${{ steps.semver.outputs.nextStrict }}-pre+${{ github.sha }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Get Next Version
+      - uses: ietf-tools/semver-action@v1
         id: semver
-        uses: ietf-tools/semver-action@v1
         with:
           token: ${{ github.token }}
           branch: ${{ github.ref_name }}
           majorList: breaking, major
           minorList: FEAT, feat, FEATURE, feature
           patchList: FIX, fix, BUGFIX, bugfix, PERF, perf, REFACTOR, refactor, TEST, test, TESTS, tests
+
+  test:
+    name: Test
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
         with:
           cache: true
@@ -40,9 +53,18 @@ jobs:
           go-version-file: go.mod
       - uses: arduino/setup-task@v1
       # TODO: cache setup-envtest
-      - run: task test # TODO: inject semver version in test binary
+      - run: task test
+        env:
+          VERSION: ${{ needs.version.outputs.nextFull }}
       - uses: codecov/codecov-action@v3
         if: always()
+
+  docker:
+    name: Docker
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v2
         with:
           install: true
@@ -60,11 +82,12 @@ jobs:
             type=sha,format=long
             type=ref,event=branch
             type=ref,event=pr
-            type=edge,branch=${{ github.event.repository.default_branch }}
-          # TODO: add semver version as tag (not sure)
+            type=raw,value=${{ needs.version.outputs.nextFull }}
+      #      type=edge,branch=${{ github.ref_name }}
+      #      type=edge,branch=${{ github.ref_name }},prefix=,suffix=
       - uses: docker/build-push-action@v3
         with:
-          build-args: VERSION=0.0.0-dev+${GITHUB_SHA::7} # TODO: inject semver version into build
+          build-args: VERSION=${{ needs.version.outputs.nextFull }}
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
