@@ -3,14 +3,14 @@ version: '3'
 output: prefixed
 
 vars:
-  _LOCAL_K8S_VERSION: '{{.K8S_VERSION | default "1.25.0"}}'
   GOARCH:
     sh: go env GOARCH
   GOOS:
     sh: go env GOOS
   GOPATH:
     sh: go env GOPATH
-  _VERSION: '{{.VERSION | default "0.0.0-dev"}}'
+  RESOLVED_K8S_VERSION: '{{.K8S_VERSION | default "1.25.0"}}'
+  RESOLVED_VERSION: '{{.VERSION | default "0.0.0-dev"}}'
 
 tasks:
 
@@ -45,15 +45,15 @@ tasks:
 
   setup-envtest:
     desc: Install envtest tool.
-    generates: [ '{{.GOPATH}}/bin/setup-envtest', './bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/**' ]
+    generates: [ '{{.GOPATH}}/bin/setup-envtest', './bin/k8s/{{.RESOLVED_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/**' ]
     status:
       - test -f {{.GOPATH}}/bin/setup-envtest
-      - test -f ./bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/etcd
-      - test -f ./bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/kube-apiserver
-      - test -f ./bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/kubectl
+      - test -f ./bin/k8s/{{.RESOLVED_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/etcd
+      - test -f ./bin/k8s/{{.RESOLVED_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/kube-apiserver
+      - test -f ./bin/k8s/{{.RESOLVED_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/kubectl
     cmds:
       - go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-      - setup-envtest use {{._LOCAL_K8S_VERSION}} --bin-dir=./bin
+      - setup-envtest use {{.RESOLVED_K8S_VERSION}} --bin-dir=./bin
 
   test:
     desc: Verify Go code & and run all unit & integration tests.
@@ -68,7 +68,7 @@ tasks:
     cmds:
       - go vet ./...
       - go test
-          -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString={{._VERSION}}'"
+          -ldflags "-X 'github.com/arikkfir/kude-controller/internal.versionString={{.RESOLVED_VERSION}}'"
           -v
           -vet=off
           -race
@@ -85,7 +85,7 @@ tasks:
         --delete-on-failure=true
         --disk-size=20g
         --keep-context=true
-        --kubernetes-version={{._LOCAL_K8S_VERSION}}
+        --kubernetes-version={{.RESOLVED_K8S_VERSION}}
         --memory=2g
         --nodes=1
         --profile=kude-controller
@@ -118,7 +118,7 @@ tasks:
       - |
         eval $(minikube -p kude-controller docker-env)
         DOCKER_BUILDKIT=1 docker build -f Dockerfile -t ghcr.io/arikkfir/kude-controller:local .
-      - helm package ./chart --app-version={{._VERSION}} --destination=. --version={{._VERSION}}
+      - helm package ./chart --app-version={{.RESOLVED_VERSION}} --destination=. --version={{.RESOLVED_VERSION}}
       - helm --kube-context=kude-controller --namespace=kude install --create-namespace --atomic --wait-for-jobs kude-controller ./kude-controller-{{.VERSION_AND_BUILD}}.tgz
       - kubectl create -f ./test/rbac.yaml
       - kubectl create -f ./test/resources.yaml
