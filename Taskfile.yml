@@ -58,16 +58,16 @@ tasks:
 
   setup-envtest:
     desc: Install envtest tool.
-    vars: { K8S_VERSION: "1.25.0" }
-    generates: [ '{{.GOPATH}}/bin/setup-envtest', './bin/k8s/{{.K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/**' ]
+    vars: { _LOCAL_K8S_VERSION: '{{.K8S_VERSION | default "1.25.0"}}' }
+    generates: [ '{{.GOPATH}}/bin/setup-envtest', './bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/**' ]
     status:
       - test -f {{.GOPATH}}/bin/setup-envtest
-      - test -f ./bin/k8s/{{.K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/etcd
-      - test -f ./bin/k8s/{{.K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/kube-apiserver
-      - test -f ./bin/k8s/{{.K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/kubectl
+      - test -f ./bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/etcd
+      - test -f ./bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/kube-apiserver
+      - test -f ./bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/kubectl
     cmds:
       - go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-      - setup-envtest use {{.K8S_VERSION}} --bin-dir=./bin
+      - setup-envtest use {{._LOCAL_K8S_VERSION}} --bin-dir=./bin
 
   test:
     desc: Verify Go code & and run all unit & integration tests.
