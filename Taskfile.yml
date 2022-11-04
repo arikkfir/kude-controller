@@ -4,8 +4,6 @@ output: prefixed
 
 vars:
   _LOCAL_K8S_VERSION: '{{.K8S_VERSION | default "1.25.0"}}'
-  DIRTY:
-    sh: '[[ -n "$(git status --porcelain)" ]] && echo "true" || echo "false"'
   GOARCH:
     sh: go env GOARCH
   GOOS:
