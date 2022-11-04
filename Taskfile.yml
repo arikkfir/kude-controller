@@ -2,28 +2,17 @@ version: '3'
 
 output: prefixed
 
-env:
-  O: '{{"{"}}' # used for sending the "{{" symbol in "cmds", bypassing Taskfile's Go Templates processing
-
 vars:
+  _LOCAL_K8S_VERSION: '{{.K8S_VERSION | default "1.25.0"}}'
   DIRTY:
     sh: '[[ -n "$(git status --porcelain)" ]] && echo "true" || echo "false"'
-  GITHUB_SHA:
-    sh: git log -n 1 --format=%h
-  GITHUB_TAG:
-    sh: git describe --tags --exact-match 2>/dev/null || echo "0.0.0-dev"
-  GITHUB_BRANCH:
-    sh: git branch --show-current || echo ""
   GOARCH:
     sh: go env GOARCH
   GOOS:
     sh: go env GOOS
   GOPATH:
     sh: go env GOPATH
-  VERSION: '{{.GITHUB_TAG}}'
-  VERSION_AND_BUILD: '{{.VERSION}}+{{.GITHUB_SHA}}{{if eq .DIRTY "true"}}.dirty{{end}}'
-
-# TODO: when checking if tools are available (minikube, go, docker) also check their version as well
+  _VERSION: '{{.VERSION | default "0.0.0-dev"}}'
 
 tasks:
 
@@ -58,7 +47,6 @@ tasks:
 
   setup-envtest:
     desc: Install envtest tool.
-    vars: { _LOCAL_K8S_VERSION: '{{.K8S_VERSION | default "1.25.0"}}' }
     generates: [ '{{.GOPATH}}/bin/setup-envtest', './bin/k8s/{{._LOCAL_K8S_VERSION}}-{{.GOOS}}-{{.GOARCH}}/**' ]
     status:
       - test -f {{.GOPATH}}/bin/setup-envtest
@@ -90,72 +78,19 @@ tasks:
           -covermode=atomic
           ./...
 
-  build-docker-images:
-    desc: Build Docker images.
-    sources:
-      - cmd/**/*
-      - internal/**/*
-      - doc.go
-      - Dockerfile
-      - go.mod
-      - go.sum
-    status:
-      - |
-        [[ "{{.MINIKUBE}}" == "true" ]] && eval $(minikube -p kude-controller docker-env)
-        docker images -q ghcr.io/arikkfir/kude-controller:{{.GITHUB_SHA}} | grep -q . || exit 1
-        docker images -q ghcr.io/arikkfir/kude-controller:{{.VERSION | replace "+" "_"}} | grep -q . || exit 1
-        docker images -q ghcr.io/arikkfir/kude-controller:{{.VERSION_AND_BUILD | replace "+" "_"}} | grep -q . || exit 1
-    cmds:
-      - |
-        [[ "{{.MINIKUBE}}" == "true" ]] && eval $(minikube -p kude-controller docker-env)
-        DOCKER_BUILDKIT=1 docker build -f Dockerfile -t ghcr.io/arikkfir/kude-controller:{{.GITHUB_SHA}} .
-        docker tag ghcr.io/arikkfir/kude-controller:{{.GITHUB_SHA}} ghcr.io/arikkfir/kude-controller:{{.VERSION | replace "+" "_"}}
-        docker tag ghcr.io/arikkfir/kude-controller:{{.GITHUB_SHA}} ghcr.io/arikkfir/kude-controller:{{.VERSION_AND_BUILD | replace "+" "_"}}
-        [[ -z "{{.GITHUB_BRANCH}}" ]] || docker tag ghcr.io/arikkfir/kude-controller:{{.GITHUB_SHA}} ghcr.io/arikkfir/kude-controller:{{.GITHUB_BRANCH}}
-
-  package-helm-chart:
-    desc: Package Helm chart.
-    sources:
-      - chart/**/*
-    generates:
-      - kude-controller-{{.VERSION_AND_BUILD}}.tgz
-    cmds:
-      - helm package ./chart --app-version={{.VERSION_AND_BUILD}} --destination=. --version={{.VERSION_AND_BUILD}}
-
-  deploy:
-    desc: Deploy changes in a branch.
-    deps: [ push-docker-images, push-helm-chart ]
-
   start-minikube:
     desc: Start a local Minikube Kubernetes cluster.
     status:
       - "minikube status -p kude-controller | grep -q 'host: Running'"
-    vars:
-      LOCAL_K8S_VERSION: "1.25.2"
     cmds:
       - minikube start --cpus=2
         --delete-on-failure=true
         --disk-size=20g
         --keep-context=true
-        --kubernetes-version={{.LOCAL_K8S_VERSION}}
+        --kubernetes-version={{._LOCAL_K8S_VERSION}}
         --memory=2g
         --nodes=1
         --profile=kude-controller
-
-  delete-minikube:
-    desc: Delete local Minikube Kubernetes cluster.
-    status:
-      - "minikube status -p kude-controller | grep -q 'Profile \"kude-controller\" not found.'"
-    cmds:
-      - minikube delete -p kude-controller
-
-  install-in-minikube:
-    desc: Install test resources into Minikube.
-    cmds:
-      - kubectl create -f ./test/rbac.yaml
-      - kubectl create -f ./test/resources.yaml
-      - kubectl --context=kude-controller -n kude wait --for=condition=available --timeout=60s gitrepositories.kude.kfirs.com/kude-controller-main
-      - kubectl --context=kude-controller -n kude wait --for=condition=uptodate --timeout=60s kubectlbundles.kude.kfirs.com/kubectl-bundle
 
   uninstall-from-minikube:
     desc: Uninstall Kude Controller from Minikube.
@@ -169,7 +104,7 @@ tasks:
 
   run:
     desc: Run a local Kubernetes cluster and deploy current code into it.
-    deps: [ start-minikube, package-helm-chart ]
+    deps: [ start-minikube ]
     sources:
       - chart/**/*
       - cmd/**/*
@@ -182,14 +117,12 @@ tasks:
     cmds:
       - defer: rm -vf ./kude-controller-{{.VERSION_AND_BUILD}}.tgz
       - task: uninstall-from-minikube
-      - task: build-docker-images
-        vars:
-          MINIKUBE: "true"
+      - |
+        eval $(minikube -p kude-controller docker-env)
+        DOCKER_BUILDKIT=1 docker build -f Dockerfile -t ghcr.io/arikkfir/kude-controller:local .
+      - helm package ./chart --app-version={{._VERSION}} --destination=. --version={{._VERSION}}
       - helm --kube-context=kude-controller --namespace=kude install --create-namespace --atomic --wait-for-jobs kude-controller ./kude-controller-{{.VERSION_AND_BUILD}}.tgz
-      - task: install-in-minikube
-
-  port-forward:
-    desc: Port-forward Kude Controller to localhost.
-    deps: [ start-minikube ]
-    cmds:
-      - kubectl --context=kude-controller -n kude port-forward deployment/controller 8080 8081
+      - kubectl create -f ./test/rbac.yaml
+      - kubectl create -f ./test/resources.yaml
+      - kubectl --context=kude-controller -n kude wait --for=condition=available --timeout=60s gitrepositories.kude.kfirs.com/kude-controller-main
+      - kubectl --context=kude-controller -n kude wait --for=condition=uptodate --timeout=60s kubectlbundles.kude.kfirs.com/kubectl-bundle
