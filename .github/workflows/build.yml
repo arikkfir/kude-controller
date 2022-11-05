@@ -108,5 +108,5 @@ jobs:
           version: 3.10.1
         id: install
       - run: helm package ./chart --app-version=${VERSION} --destination=. --version=${VERSION}
-      - run: echo -n "${GITHUB_TOKEN}" | helm registry login --username ${{ github.repository_owner }} --password-stdin ghcr.io
+      - run: echo -n "${{ secrets.GITHUB_TOKEN }}" | helm registry login --username ${{ github.repository_owner }} --password-stdin ghcr.io
       - run: helm push kude-controller-${VERSION}.tgz oci://ghcr.io/${{ github.repository_owner }}
