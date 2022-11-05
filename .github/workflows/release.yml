@@ -63,7 +63,6 @@ jobs:
         with:
           images: ghcr.io/arikkfir/kude-controller
           tags: |
-            type=sha
             type=raw,value=${{ needs.version.outputs.version }}
             type=raw,value=${{ needs.version.outputs.versionWithBuild }}
       - uses: docker/build-push-action@v3
