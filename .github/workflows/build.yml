@@ -80,10 +80,9 @@ jobs:
         with:
           images: ghcr.io/arikkfir/kude-controller
           tags: |
-            type=sha,prefix=pre-
+            type=sha,prefix=${{ github.ref_name }}-
             type=ref,event=branch
             type=ref,event=pr
-            type=raw,value=${{ needs.version.outputs.nextWithBuild }}
       #      type=edge,branch=${{ github.ref_name }}
       #      type=edge,branch=${{ github.ref_name }},prefix=,suffix=
       - uses: docker/build-push-action@v3
