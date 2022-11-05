@@ -37,7 +37,6 @@ jobs:
           check-latest: true
           go-version-file: go.mod
       - uses: arduino/setup-task@v1
-      # TODO: cache setup-envtest
       - run: task test
         env:
           VERSION: ${{ needs.version.outputs.versionWithBuild }}
