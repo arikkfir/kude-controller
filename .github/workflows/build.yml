@@ -83,8 +83,6 @@ jobs:
             type=sha,prefix=${{ github.ref_name }}-
             type=ref,event=branch
             type=ref,event=pr
-      #      type=edge,branch=${{ github.ref_name }}
-      #      type=edge,branch=${{ github.ref_name }},prefix=,suffix=
       - uses: docker/build-push-action@v3
         with:
           build-args: VERSION=${{ needs.version.outputs.nextWithBuild }}
