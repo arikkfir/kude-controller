@@ -15,6 +15,7 @@ jobs:
     name: Version
     runs-on: ubuntu-latest
     outputs:
+      branchSlug: ${{ env.CI_GITHUB_REF_NAME_SLUG }}
       nextWithBuild: ${{ steps.semver.outputs.nextStrict }}-branch-${{ env.CI_GITHUB_REF_NAME_SLUG }}+${{ steps.shortsha.outputs.sha }}
     steps:
       - uses: actions/checkout@v3
@@ -71,7 +72,7 @@ jobs:
         with:
           images: ghcr.io/arikkfir/kude-controller
           tags: |
-            type=sha,prefix=${{ env.CI_GITHUB_REF_NAME_SLUG }}-,suffix=
+            type=sha,prefix=${{ needs.version.outputs.branchSlug }}-,suffix=
             type=ref,event=branch
       - uses: docker/build-push-action@v3
         with:
