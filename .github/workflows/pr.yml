@@ -1,5 +1,5 @@
 name: Build pull requests
-run-name: Build PR ${{ github.event.pull_request.number }}
+run-name: Build PR \#${{github.event.number}}
 
 on:
   pull_request:
