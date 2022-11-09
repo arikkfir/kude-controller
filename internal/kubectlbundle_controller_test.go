@@ -93,14 +93,18 @@ func TestKubectlBundleDeletion(t *testing.T) {
 		if assert.NoErrorf(c, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") {
 
 			cDegraded := meta.FindStatusCondition(r.Status.Conditions, typeDegradedKubectlBundle)
-			assert.Equal(c, metav1.ConditionTrue, cDegraded.Status, "incorrect status")
-			assert.Equal(c, "Deleted", cDegraded.Reason, "incorrect reason")
-			assert.Equal(c, "Deleting resource", cDegraded.Message, "incorrect message")
+			if assert.NotNil(c, cDegraded, "degraded condition not found") {
+				assert.Equal(c, metav1.ConditionTrue, cDegraded.Status, "incorrect status")
+				assert.Equal(c, "Deleted", cDegraded.Reason, "incorrect reason")
+				assert.Equal(c, "Deleting resource", cDegraded.Message, "incorrect message")
+			}
 
 			cUpToDate := meta.FindStatusCondition(r.Status.Conditions, typeUpToDateKubectlBundle)
-			assert.Equal(c, metav1.ConditionUnknown, cUpToDate.Status, "incorrect status")
-			assert.Equal(c, "Deleted", cUpToDate.Reason, "incorrect reason")
-			assert.Equal(c, "Deleting resource", cUpToDate.Message, "incorrect message")
+			if assert.NotNil(c, cUpToDate, "uptodate condition not found") {
+				assert.Equal(c, metav1.ConditionUnknown, cUpToDate.Status, "incorrect status")
+				assert.Equal(c, "Deleted", cUpToDate.Reason, "incorrect reason")
+				assert.Equal(c, "Deleting resource", cUpToDate.Message, "incorrect message")
+			}
 
 			assert.NotContains(c, r.Finalizers, finalizerKubectlBundle, "finalizer found")
 		}
