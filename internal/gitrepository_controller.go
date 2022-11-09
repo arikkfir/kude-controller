@@ -74,10 +74,10 @@ func (r *GitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// If marked for deletion, perform actual deletion & remove finalizer
 	if o.DeletionTimestamp != nil {
 		if res, err := r.setCondition(ctx, &o, typeDegradedGitRepository, metav1.ConditionTrue, "Deleted", "Deleting resource"); res.Requeue || err != nil {
-			return ctrl.Result{}, err
+			return res, err
 		}
 		if res, err := r.setCondition(ctx, &o, typeAvailableGitRepository, metav1.ConditionFalse, "Deleted", "Deleting resource"); res.Requeue || err != nil {
-			return ctrl.Result{}, err
+			return res, err
 		}
 		if o.Status.WorkDirectory != "" {
 			if strings.HasPrefix(o.Status.WorkDirectory, r.WorkDir+"/") {
@@ -96,7 +96,7 @@ func (r *GitRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 		}
 		if res, err := r.setCondition(ctx, &o, typeClonedGitRepository, metav1.ConditionFalse, "CloneDeleted", ""); res.Requeue || err != nil {
-			return ctrl.Result{}, err
+			return res, err
 		}
 		if controllerutil.RemoveFinalizer(&o, finalizerGitRepository) {
 			if err := r.Client.Update(ctx, &o); err != nil {
