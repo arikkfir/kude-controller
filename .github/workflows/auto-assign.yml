@@ -1,5 +1,5 @@
 name: Auto Assign PR
-run-name: Auto Assign PR#${{ github.event.number }}
+run-name: 'Auto Assign PR #${{ github.event.number }} to ${{ github.actor }}'
 
 on:
   pull_request:

@@ -42,10 +42,3 @@ $ skaffold dev
 $ controller-gen object paths="./internal/v1alpha1"
 $ controller-gen rbac:roleName=kude-controller crd webhook paths="./..."
 ```
-
-### ROADMAP
-
-- [ ] Implement Helm bundle
-- [ ] Implement Kude bundle
-- [ ] Implement Kustomize bundle
-- [ ] Setup distribution methods of Kude Controller (e.g. Helm, Kustomize, YAML, etc)
