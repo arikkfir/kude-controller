@@ -1,5 +1,5 @@
 name: Build pull requests
-run-name: Build PR \#${{github.event.number}}
+run-name: 'Build PR #${{github.event.number}}'
 
 on:
   pull_request:
@@ -29,7 +29,7 @@ jobs:
         id: semver
         with:
           token: ${{ github.token }}
-          branch: ${{ github.ref_name }}
+          branch: ${{ github.head_ref }}
           majorList: BREAKING, breaking, MAJOR, major
           minorList: FEAT, feat, FEATURE, feature
           patchList: DEVOPS, devops, FIX, fix, BUGFIX, bugfix, PERF, perf, REFACTOR, refactor, TEST, test, TESTS, tests
