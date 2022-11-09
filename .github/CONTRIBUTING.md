@@ -13,12 +13,17 @@ this project you agree to abide by its terms.
 
 1. You should probably have a Go-capable IDE
    1. Usually either of GoLand or VSCode (but you can use any other IDE of course)
-2. Ensure you have Go SDK 1.18+ installed & working
+2. Ensure you have Go SDK 1.19+ installed & working
 3. Ensure you have Docker installed & working
+4. Ensure you have [Task](https://taskfile.dev/) installed & working
+   ```shell
+   $ brew install go-task/tap/go-task
+   ```
 4. Verify they work by:
    ```shell
    $ docker version
    $ go version
+   $ task --version
    ```
 
 ## Issues and PRs
@@ -34,7 +39,7 @@ at the links below if you're not sure how to open a PR.
 1. [Fork][fork] and clone the repository.
 2. Verify it works & all tests are passing on your machine by:
    ```shell
-   $ go test ./...
+   $ task test
    ```
 3. Create a new branch:
    ```shell
