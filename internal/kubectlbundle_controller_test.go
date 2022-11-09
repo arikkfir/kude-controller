@@ -102,7 +102,7 @@ func TestKubectlBundleDeletion(t *testing.T) {
 			assert.Equal(c, "Deleted", cUpToDate.Reason, "incorrect reason")
 			assert.Equal(c, "Deleting resource", cUpToDate.Message, "incorrect message")
 
-			assert.NotContains(c, r.Finalizers, finalizerKubectlBundle, "finalizer not found")
+			assert.NotContains(c, r.Finalizers, finalizerKubectlBundle, "finalizer found")
 		}
 	}, 5*time.Second, 1*time.Second, "resource not finalized correctly")
 
@@ -115,5 +115,4 @@ func TestKubectlBundleDeletion(t *testing.T) {
 			assert.NoError(c, client.IgnoreNotFound(k8sClient.Get(ctx, lookupKey, &r)))
 		}, 5*time.Second, 1*time.Second, "resource not finalized correctly")
 	}
-
 }
