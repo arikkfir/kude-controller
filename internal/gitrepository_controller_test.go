@@ -132,7 +132,7 @@ func TestGitRepositoryClone(t *testing.T) {
 }
 
 func TestGitRepositoryDeletion(t *testing.T) {
-	k8sClient, _ := harness.SetupTestEnv(t, &KubectlBundleReconciler{})
+	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: t.TempDir()})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
@@ -162,25 +162,31 @@ func TestGitRepositoryDeletion(t *testing.T) {
 		if assert.NoErrorf(c, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") {
 
 			cDegraded := meta.FindStatusCondition(r.Status.Conditions, typeDegradedGitRepository)
-			assert.Equal(c, metav1.ConditionTrue, cDegraded.Status, "incorrect status")
-			assert.Equal(c, "Deleted", cDegraded.Reason, "incorrect reason")
-			assert.Equal(c, "Deleting resource", cDegraded.Message, "incorrect message")
+			if assert.NotNil(c, cDegraded, "degraded condition not found") {
+				assert.Equal(c, metav1.ConditionTrue, cDegraded.Status, "incorrect status")
+				assert.Equal(c, "Deleted", cDegraded.Reason, "incorrect reason")
+				assert.Equal(c, "Deleting resource", cDegraded.Message, "incorrect message")
+			}
 
 			cUpToDate := meta.FindStatusCondition(r.Status.Conditions, typeAvailableGitRepository)
-			assert.Equal(c, metav1.ConditionFalse, cUpToDate.Status, "incorrect status")
-			assert.Equal(c, "Deleted", cUpToDate.Reason, "incorrect reason")
-			assert.Equal(c, "Deleting resource", cUpToDate.Message, "incorrect message")
+			if assert.NotNil(c, cUpToDate, "uptodate condition not found") {
+				assert.Equal(c, metav1.ConditionFalse, cUpToDate.Status, "incorrect status")
+				assert.Equal(c, "Deleted", cUpToDate.Reason, "incorrect reason")
+				assert.Equal(c, "Deleting resource", cUpToDate.Message, "incorrect message")
+			}
 
 			cCloned := meta.FindStatusCondition(r.Status.Conditions, typeClonedGitRepository)
-			assert.Equal(c, metav1.ConditionFalse, cCloned.Status, "incorrect status")
-			assert.Equal(c, "Deleted", cCloned.Reason, "incorrect reason")
-			assert.Equal(c, "", cCloned.Message, "incorrect message")
+			if assert.NotNil(c, cCloned, "cloned condition not found") {
+				assert.Equal(c, metav1.ConditionFalse, cCloned.Status, "incorrect status")
+				assert.Equal(c, "CloneDeleted", cCloned.Reason, "incorrect reason")
+				assert.Equal(c, "", cCloned.Message, "incorrect message")
+			}
 
 			assert.Equal(c, "", r.Status.WorkDirectory)
 
 			assert.NotContains(c, r.Finalizers, finalizerGitRepository, "finalizer found")
 		}
-	}, 15*time.Second, 1*time.Second, "resource not finalized correctly")
+	}, 5*time.Second, 1*time.Second, "resource not finalized correctly")
 
 	if assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, repo), "resource lookup failed") {
 		assert.Equal(t, []string{"Tests"}, repo.Finalizers)
