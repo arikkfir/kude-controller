@@ -28,7 +28,7 @@ func init() {
 	}
 }
 
-func TestIgnoreMissingResource(t *testing.T) {
+func TestIgnoreMissingGitRepositoryResource(t *testing.T) {
 	reconciler := &GitRepositoryReconciler{}
 	_, _ = harness.SetupTestEnv(t, reconciler)
 
