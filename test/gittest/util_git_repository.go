@@ -1,8 +1,7 @@
-package internal
+package gittest
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -10,13 +9,13 @@ import (
 	"strings"
 )
 
-type gitRepository struct {
-	url *url.URL
-	dir string
+type GitRepository struct {
+	URL *url.URL
+	Dir string
 }
 
-func newGitRepository(name string) (*gitRepository, error) {
-	dir, err := ioutil.TempDir("", "kude-controller")
+func NewGitRepository(name string) (*GitRepository, error) {
+	dir, err := os.MkdirTemp("", "kude-controller")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
@@ -30,38 +29,38 @@ func newGitRepository(name string) (*gitRepository, error) {
 		return nil, fmt.Errorf("failed to parse Git repository URL '%s': %w", gitRepositoryUrl, err)
 	}
 
-	r := &gitRepository{
-		url: gitRepositoryUrl,
-		dir: dir,
+	r := &GitRepository{
+		URL: gitRepositoryUrl,
+		Dir: dir,
 	}
-	if err := r.git("init", "--initial-branch=main"); err != nil {
+	if err := r.RunGit("init", "--initial-branch=main"); err != nil {
 		return nil, fmt.Errorf("failed to initialize Git repository: %w", err)
-	} else if err := r.git("config", "user.name", "kude"); err != nil {
+	} else if err := r.RunGit("config", "user.name", "kude"); err != nil {
 		return nil, fmt.Errorf("failed to set Git user name: %w", err)
-	} else if err := r.git("config", "user.email", "arik+kude@kfirs.com"); err != nil {
+	} else if err := r.RunGit("config", "user.email", "arik+kude@kfirs.com"); err != nil {
 		return nil, fmt.Errorf("failed to set Git user email: %w", err)
 	} else {
 		return r, nil
 	}
 }
 
-func (r *gitRepository) git(args ...string) error {
+func (r *GitRepository) RunGit(args ...string) error {
 	cmd := exec.Command("git", args...)
-	cmd.Dir = r.dir
+	cmd.Dir = r.Dir
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to run git command '%s' in dir '%s': %w\n%s", strings.Join(cmd.Args, " "), r.dir, err, string(out))
+		return fmt.Errorf("failed to run git command '%s' in dir '%s': %w\n%s", strings.Join(cmd.Args, " "), r.Dir, err, string(out))
 	} else {
 		return nil
 	}
 }
 
-func (r *gitRepository) commitFile(file, content string) error {
-	path := filepath.Join(r.dir, file)
-	if err := ioutil.WriteFile(path, []byte(content), 0600); err != nil {
+func (r *GitRepository) CommitFile(file, content string) error {
+	path := filepath.Join(r.Dir, file)
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		return fmt.Errorf("failed to write file '%s': %w", path, err)
-	} else if err := r.git("add", file); err != nil {
+	} else if err := r.RunGit("add", file); err != nil {
 		return fmt.Errorf("failed to add file '%s': %w", file, err)
-	} else if err := r.git("commit", "-m", "Adding "+file); err != nil {
+	} else if err := r.RunGit("commit", "-m", "Adding "+file); err != nil {
 		return fmt.Errorf("failed to commit file '%s': %w", file, err)
 	} else {
 		return nil

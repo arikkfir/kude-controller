@@ -3,6 +3,8 @@ package internal
 import (
 	"context"
 	"github.com/arikkfir/kude-controller/internal/v1alpha1"
+	"github.com/arikkfir/kude-controller/test/gittest"
+	"github.com/arikkfir/kude-controller/test/harness"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -12,6 +14,7 @@ import (
 	"os/exec"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
 )
@@ -26,9 +29,9 @@ func init() {
 	}
 }
 
-func TestIgnoreMissingResource(t *testing.T) {
+func TestIgnoreMissingGitRepositoryResource(t *testing.T) {
 	reconciler := &GitRepositoryReconciler{}
-	_, _ = setupTestEnv(t, reconciler)
+	_, _ = harness.SetupTestEnv(t, reconciler)
 
 	time.Sleep(5 * time.Second) // Give manager and cache time to start; needed since we're directly invoking controller
 	res, err := reconciler.Reconcile(context.Background(), ctrl.Request{
@@ -42,7 +45,7 @@ func TestIgnoreMissingResource(t *testing.T) {
 }
 
 func TestGitRepositoryResourceInitialization(t *testing.T) {
-	k8sClient, _ := setupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
+	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
@@ -84,12 +87,12 @@ func TestGitRepositoryClone(t *testing.T) {
 	if !hasGit {
 		t.Skip("git not found, skipping")
 	}
-	repository, err := newGitRepository(t.Name())
+	repository, err := gittest.NewGitRepository(t.Name())
 	require.NoErrorf(t, err, "failed to create repository")
-	require.NoErrorf(t, repository.commitFile("file1", "content1"), "failed to commit file")
-	defer os.RemoveAll(repository.dir)
+	require.NoErrorf(t, repository.CommitFile("file1", "content1"), "failed to commit file")
+	defer os.RemoveAll(repository.Dir)
 
-	k8sClient, _ := setupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
+	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
@@ -101,7 +104,7 @@ func TestGitRepositoryClone(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: v1alpha1.GitRepositorySpec{
-			URL:             repository.url.String(),
+			URL:             repository.URL.String(),
 			Branch:          "refs/heads/main",
 			PollingInterval: "5s",
 		},
@@ -126,4 +129,72 @@ func TestGitRepositoryClone(t *testing.T) {
 	}, 5*time.Second, 1*time.Second, "resource not cloned correctly")
 
 	// TODO: verify clone dir
+}
+
+func TestGitRepositoryDeletion(t *testing.T) {
+	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: t.TempDir()})
+
+	repo := &v1alpha1.GitRepository{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion.String(),
+			Kind:       reflect.TypeOf(v1alpha1.GitRepository{}).Name(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "repo1",
+			Namespace: "default",
+			Finalizers: []string{
+				"Tests",
+			},
+		},
+		Spec: v1alpha1.GitRepositorySpec{
+			Branch:          "refs/heads/main",
+			PollingInterval: "5s",
+		},
+	}
+	lookupKey := types.NamespacedName{Name: repo.Name, Namespace: repo.Namespace}
+
+	ctx := context.Background()
+	require.NoErrorf(t, k8sClient.Create(ctx, repo), "resource creation failed")
+	time.Sleep(3 * time.Second)
+	require.NoErrorf(t, k8sClient.Delete(ctx, repo), "resource deletion failed")
+	assert.EventuallyWithTf(t, func(c *assert.CollectT) {
+		var r v1alpha1.GitRepository
+		if assert.NoErrorf(c, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") {
+
+			cDegraded := meta.FindStatusCondition(r.Status.Conditions, typeDegradedGitRepository)
+			if assert.NotNil(c, cDegraded, "degraded condition not found") {
+				assert.Equal(c, metav1.ConditionTrue, cDegraded.Status, "incorrect status")
+				assert.Equal(c, "Deleted", cDegraded.Reason, "incorrect reason")
+				assert.Equal(c, "Deleting resource", cDegraded.Message, "incorrect message")
+			}
+
+			cUpToDate := meta.FindStatusCondition(r.Status.Conditions, typeAvailableGitRepository)
+			if assert.NotNil(c, cUpToDate, "uptodate condition not found") {
+				assert.Equal(c, metav1.ConditionFalse, cUpToDate.Status, "incorrect status")
+				assert.Equal(c, "Deleted", cUpToDate.Reason, "incorrect reason")
+				assert.Equal(c, "Deleting resource", cUpToDate.Message, "incorrect message")
+			}
+
+			cCloned := meta.FindStatusCondition(r.Status.Conditions, typeClonedGitRepository)
+			if assert.NotNil(c, cCloned, "cloned condition not found") {
+				assert.Equal(c, metav1.ConditionFalse, cCloned.Status, "incorrect status")
+				assert.Equal(c, "CloneDeleted", cCloned.Reason, "incorrect reason")
+				assert.Equal(c, "", cCloned.Message, "incorrect message")
+			}
+
+			assert.Equal(c, "", r.Status.WorkDirectory)
+
+			assert.NotContains(c, r.Finalizers, finalizerGitRepository, "finalizer found")
+		}
+	}, 5*time.Second, 1*time.Second, "resource not finalized correctly")
+
+	if assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, repo), "resource lookup failed") {
+		assert.Equal(t, []string{"Tests"}, repo.Finalizers)
+		repo.ObjectMeta.Finalizers = []string{}
+		require.NoErrorf(t, k8sClient.Update(ctx, repo), "finalizer removal failed")
+		assert.EventuallyWithTf(t, func(c *assert.CollectT) {
+			var r v1alpha1.GitRepository
+			assert.NoError(c, client.IgnoreNotFound(k8sClient.Get(ctx, lookupKey, &r)))
+		}, 5*time.Second, 1*time.Second, "resource not finalized correctly")
+	}
 }
