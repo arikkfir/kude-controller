@@ -142,6 +142,9 @@ func TestGitRepositoryDeletion(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "repo1",
 			Namespace: "default",
+			Finalizers: []string{
+				"Tests",
+			},
 		},
 		Spec: v1alpha1.GitRepositorySpec{
 			Branch:          "refs/heads/main",
@@ -177,7 +180,7 @@ func TestGitRepositoryDeletion(t *testing.T) {
 
 			assert.NotContains(c, r.Finalizers, finalizerGitRepository, "finalizer found")
 		}
-	}, 5*time.Second, 1*time.Second, "resource not finalized correctly")
+	}, 15*time.Second, 1*time.Second, "resource not finalized correctly")
 
 	if assert.NoErrorf(t, k8sClient.Get(ctx, lookupKey, repo), "resource lookup failed") {
 		assert.Equal(t, []string{"Tests"}, repo.Finalizers)
