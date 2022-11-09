@@ -3,7 +3,10 @@ run-name: 'Build PR #${{github.event.number}}'
 
 on:
   pull_request:
-    branches: [ '*' ]
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 defaults:
   run:
