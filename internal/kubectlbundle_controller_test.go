@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"github.com/arikkfir/kude-controller/internal/v1alpha1"
+	"github.com/arikkfir/kude-controller/test/harness"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,7 +14,7 @@ import (
 )
 
 func TestKubectlBundleInitialization(t *testing.T) {
-	k8sClient, _ := setupTestEnv(t, &KubectlBundleReconciler{})
+	k8sClient, _ := harness.SetupTestEnv(t, &KubectlBundleReconciler{})
 
 	bundle := &v1alpha1.KubectlBundle{
 		TypeMeta: metav1.TypeMeta{

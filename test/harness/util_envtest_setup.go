@@ -1,4 +1,4 @@
-package internal
+package harness
 
 import (
 	"context"
@@ -25,43 +25,22 @@ import (
 )
 
 const (
-	k8sVersion = "1.25.0"
+	k8sVersion = "1.25.0" // TODO: externalize k8sVersion
 )
 
 type Setupable interface {
 	SetupWithManager(mgr ctrl.Manager) error
 }
 
-type testWriter struct {
-	T *testing.T
-}
-
-func (tw *testWriter) Write(p []byte) (n int, err error) {
-	tw.T.Helper()
-	tw.T.Logf("%s", p)
-	return len(p), nil
-}
-
-func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Client, k8sMgr manager.Manager) {
+func SetupServer(t *testing.T) (k8sConfig *rest.Config, k8sClient client.Client, k8sMgr manager.Manager) {
 	t.Helper()
 
-	logLevel := zapr.NewAtomicLevelAt(zapr.InfoLevel)
-	opts := zap.Options{
-		Development: true,
-		Level:       &logLevel,
-		DestWriter:  &testWriter{T: t},
-		TimeEncoder: zapcore.TimeEncoderOfLayout(time.StampMilli),
-	}
-	logger := zap.New(zap.UseFlagOptions(&opts))
-
 	var (
-		k8sConfig       *rest.Config
 		testEnv         *envtest.Environment
 		workDir         string
 		binaryAssetsDir string
 	)
 
-	t.Log("Obtaining current work directory")
 	if wd, err := os.Getwd(); err != nil {
 		t.Fatalf("failed to get working directory: %v", err)
 	} else {
@@ -69,7 +48,6 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 		binaryAssetsDir = filepath.Join(workDir, "bin", "k8s", strings.Join([]string{k8sVersion, runtime.GOOS, runtime.GOARCH}, "-"))
 	}
 
-	t.Log("Bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		AttachControlPlaneOutput: false,
 		BinaryAssetsDirectory:    binaryAssetsDir,
@@ -83,13 +61,35 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	} else {
 		k8sConfig = cfg
 	}
-	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(func() {
 		t.Log("Stopping test environment")
-		cancel()
 		if err := testEnv.Stop(); err != nil {
 			t.Errorf("failed to stop test environment: %v", err)
 		}
+	})
+
+	return
+}
+
+func SetupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Client, k8sMgr manager.Manager) {
+	t.Helper()
+
+	var k8sConfig *rest.Config
+	k8sConfig, k8sClient, k8sMgr = SetupServer(t)
+
+	logLevel := zapr.NewAtomicLevelAt(zapr.InfoLevel)
+	opts := zap.Options{
+		Development: true,
+		Level:       &logLevel,
+		DestWriter:  &testWriter{T: t},
+		TimeEncoder: zapcore.TimeEncoderOfLayout(time.StampMilli),
+	}
+	logger := zap.New(zap.UseFlagOptions(&opts))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		t.Log("Stopping manager")
+		cancel()
 	})
 
 	t.Log("Registering Kubernetes resource types scheme")
@@ -132,7 +132,10 @@ func setupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Clie
 	if err != nil {
 		t.Fatalf("Failed creating events watcher: %+v", err)
 	}
-	t.Cleanup(eventsWatcher.Stop)
+	t.Cleanup(func() {
+		t.Log("Stopping event watcher")
+		eventsWatcher.Stop()
+	})
 	go func() {
 		for {
 			e, ok := <-eventsWatcher.ResultChan()

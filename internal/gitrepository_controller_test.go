@@ -3,6 +3,8 @@ package internal
 import (
 	"context"
 	"github.com/arikkfir/kude-controller/internal/v1alpha1"
+	"github.com/arikkfir/kude-controller/test/gittest"
+	"github.com/arikkfir/kude-controller/test/harness"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -28,7 +30,7 @@ func init() {
 
 func TestIgnoreMissingResource(t *testing.T) {
 	reconciler := &GitRepositoryReconciler{}
-	_, _ = setupTestEnv(t, reconciler)
+	_, _ = harness.SetupTestEnv(t, reconciler)
 
 	time.Sleep(5 * time.Second) // Give manager and cache time to start; needed since we're directly invoking controller
 	res, err := reconciler.Reconcile(context.Background(), ctrl.Request{
@@ -42,7 +44,7 @@ func TestIgnoreMissingResource(t *testing.T) {
 }
 
 func TestGitRepositoryResourceInitialization(t *testing.T) {
-	k8sClient, _ := setupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
+	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
@@ -84,12 +86,12 @@ func TestGitRepositoryClone(t *testing.T) {
 	if !hasGit {
 		t.Skip("git not found, skipping")
 	}
-	repository, err := newGitRepository(t.Name())
+	repository, err := gittest.NewGitRepository(t.Name())
 	require.NoErrorf(t, err, "failed to create repository")
-	require.NoErrorf(t, repository.commitFile("file1", "content1"), "failed to commit file")
-	defer os.RemoveAll(repository.dir)
+	require.NoErrorf(t, repository.CommitFile("file1", "content1"), "failed to commit file")
+	defer os.RemoveAll(repository.Dir)
 
-	k8sClient, _ := setupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
+	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
@@ -101,7 +103,7 @@ func TestGitRepositoryClone(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: v1alpha1.GitRepositorySpec{
-			URL:             repository.url.String(),
+			URL:             repository.URL.String(),
 			Branch:          "refs/heads/main",
 			PollingInterval: "5s",
 		},
