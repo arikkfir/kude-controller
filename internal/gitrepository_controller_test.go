@@ -7,9 +7,11 @@ import (
 	"github.com/arikkfir/kude-controller/test/harness"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/events/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"os"
 	"os/exec"
 	"reflect"
@@ -196,5 +198,79 @@ func TestGitRepositoryDeletion(t *testing.T) {
 			var r v1alpha1.GitRepository
 			assert.NoError(c, client.IgnoreNotFound(k8sClient.Get(ctx, lookupKey, &r)))
 		}, 5*time.Second, 1*time.Second, "resource not finalized correctly")
+	}
+}
+
+func TestGitRepositoryDeletionFailsWhenWorkDirIsInvalid(t *testing.T) {
+	workdir := t.TempDir()
+	k8sClient, k8sConfig, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: workdir})
+
+	repo := &v1alpha1.GitRepository{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion.String(),
+			Kind:       reflect.TypeOf(v1alpha1.GitRepository{}).Name(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "repo1",
+			Namespace: "default",
+			Labels:    map[string]string{"test": "test"},
+		},
+		Spec: v1alpha1.GitRepositorySpec{
+			Branch:          "refs/heads/main",
+			PollingInterval: "5s",
+		},
+	}
+	lookupKey := types.NamespacedName{Name: repo.Name, Namespace: repo.Namespace}
+
+	ctx := context.Background()
+
+	// Create the repo
+	require.NoErrorf(t, k8sClient.Create(ctx, repo), "resource creation failed")
+
+	// Set an invalid work directory
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		var r v1alpha1.GitRepository
+		if assert.NoError(c, k8sClient.Get(ctx, lookupKey, &r), "resource lookup failed") {
+			r.Status.WorkDirectory = "/invalid/workdir"
+			assert.NoError(c, k8sClient.Status().Update(ctx, &r), "status update failed")
+		}
+	}, 10*time.Second, 1*time.Second, "Failed setting invalid workdir")
+
+	// Setup an event listener
+	clientset, err := kubernetes.NewForConfig(k8sConfig)
+	if err != nil {
+		t.Fatalf("Failed creating Events client: %+v", err)
+	}
+	eventsWatcher, err := clientset.EventsV1().Events(repo.Namespace).Watch(ctx, metav1.ListOptions{})
+	if err != nil {
+		t.Fatalf("Failed creating events watcher: %+v", err)
+	}
+	t.Cleanup(func() {
+		t.Log("Stopping event watcher")
+		eventsWatcher.Stop()
+	})
+
+	// Now delete it
+	require.NoErrorf(t, k8sClient.Delete(ctx, repo), "resource deletion failed")
+
+	// Verify that the event was recorded (about invalid workdir)
+	found := false
+	for !found {
+		select {
+		case e := <-eventsWatcher.ResultChan():
+			if event, ok := e.Object.(*v1.Event); ok {
+				if event.Reason == "InvalidWorkDirectory" {
+					involvedObject := event.Regarding
+					assert.Equal(t, repo.Name, involvedObject.Name)
+					assert.Equal(t, repo.Namespace, involvedObject.Namespace)
+					assert.Equal(t, "Work directory '/invalid/workdir' is not under "+workdir+"/", event.Note)
+					found = true
+				}
+			}
+		case <-time.After(1 * time.Second):
+		}
+	}
+	if !found {
+		t.Error("Timed out waiting for invalid workdir event")
 	}
 }
