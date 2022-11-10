@@ -71,10 +71,9 @@ func SetupServer(t *testing.T) (k8sConfig *rest.Config, k8sClient client.Client,
 	return
 }
 
-func SetupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Client, k8sMgr manager.Manager) {
+func SetupTestEnv(t *testing.T, reconcilers ...Setupable) (k8sClient client.Client, k8sConfig *rest.Config, k8sMgr manager.Manager) {
 	t.Helper()
 
-	var k8sConfig *rest.Config
 	k8sConfig, k8sClient, k8sMgr = SetupServer(t)
 
 	logLevel := zapr.NewAtomicLevelAt(zapr.InfoLevel)
