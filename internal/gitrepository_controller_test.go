@@ -31,7 +31,7 @@ func init() {
 
 func TestIgnoreMissingGitRepositoryResource(t *testing.T) {
 	reconciler := &GitRepositoryReconciler{}
-	_, _ = harness.SetupTestEnv(t, reconciler)
+	_, _, _ = harness.SetupTestEnv(t, reconciler)
 
 	time.Sleep(5 * time.Second) // Give manager and cache time to start; needed since we're directly invoking controller
 	res, err := reconciler.Reconcile(context.Background(), ctrl.Request{
@@ -45,7 +45,7 @@ func TestIgnoreMissingGitRepositoryResource(t *testing.T) {
 }
 
 func TestGitRepositoryResourceInitialization(t *testing.T) {
-	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
+	k8sClient, _, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
@@ -92,7 +92,7 @@ func TestGitRepositoryClone(t *testing.T) {
 	require.NoErrorf(t, repository.CommitFile("file1", "content1"), "failed to commit file")
 	defer os.RemoveAll(repository.Dir)
 
-	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
+	k8sClient, _, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: "/tmp"})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{
@@ -132,7 +132,7 @@ func TestGitRepositoryClone(t *testing.T) {
 }
 
 func TestGitRepositoryDeletion(t *testing.T) {
-	k8sClient, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: t.TempDir()})
+	k8sClient, _, _ := harness.SetupTestEnv(t, &GitRepositoryReconciler{WorkDir: t.TempDir()})
 
 	repo := &v1alpha1.GitRepository{
 		TypeMeta: metav1.TypeMeta{

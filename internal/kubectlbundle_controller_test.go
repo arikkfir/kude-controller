@@ -18,7 +18,7 @@ import (
 
 func TestIgnoreMissingKubectlBundleResource(t *testing.T) {
 	reconciler := &KubectlBundleReconciler{}
-	_, _ = harness.SetupTestEnv(t, reconciler)
+	_, _, _ = harness.SetupTestEnv(t, reconciler)
 
 	time.Sleep(5 * time.Second) // Give manager and cache time to start; needed since we're directly invoking controller
 	res, err := reconciler.Reconcile(context.Background(), ctrl.Request{
@@ -32,7 +32,7 @@ func TestIgnoreMissingKubectlBundleResource(t *testing.T) {
 }
 
 func TestKubectlBundleInitialization(t *testing.T) {
-	k8sClient, _ := harness.SetupTestEnv(t, &KubectlBundleReconciler{})
+	k8sClient, _, _ := harness.SetupTestEnv(t, &KubectlBundleReconciler{})
 
 	bundle := &v1alpha1.KubectlBundle{
 		TypeMeta: metav1.TypeMeta{
@@ -62,7 +62,7 @@ func TestKubectlBundleInitialization(t *testing.T) {
 }
 
 func TestKubectlBundleDeletion(t *testing.T) {
-	k8sClient, _ := harness.SetupTestEnv(t, &KubectlBundleReconciler{})
+	k8sClient, _, _ := harness.SetupTestEnv(t, &KubectlBundleReconciler{})
 
 	bundle := &v1alpha1.KubectlBundle{
 		TypeMeta: metav1.TypeMeta{
